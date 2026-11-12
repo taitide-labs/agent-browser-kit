@@ -1,0 +1,61 @@
+amends "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Builtins.pkl"
+
+steps {
+  ["autocorrect"] {
+    glob = List("*.md", "*.ts", "*.js")
+    check = "autocorrect --lint {{files}}"
+    fix = "autocorrect --fix {{files}}"
+  }
+
+  ["rumdl"] {
+    glob = List("*.md")
+    check = "rumdl check {{files}}"
+    fix = "rumdl check --fix {{files}}"
+  }
+
+  ["mmdr"] {
+    glob = List("*.md")
+    check = "for f in {{files}}; do if grep -q '```mermaid' \"$f\"; then mmdr -i \"$f\" --size --fastText >/dev/null || exit 1; fi; done"
+  }
+
+  ["lychee"] {
+    glob = List("*.md")
+    check = "lychee --offline {{files}}"
+  }
+
+  ["typos"] = Builtins.typos
+  ["oxfmt"] = Builtins.oxfmt
+
+  ["oxlint"] {
+    glob = List("*.ts", "*.js")
+    check = "oxlint {{files}}"
+    fix = "oxlint --fix {{files}}"
+  }
+
+  ["typecheck"] {
+    glob = List("src/**/*.ts", "tsconfig.json")
+    check = "bun run typecheck"
+  }
+
+  ["bun_test"] {
+    glob = List("src/**/*.ts", "package.json")
+    check = "bun test"
+  }
+}
+
+hooks {
+  ["commit-msg"] {
+    steps {
+      ["conventional_commit"] = Builtins.check_conventional_commit
+    }
+  }
+
+  ["pre-push"] {
+    steps {
+      ["bun_audit"] {
+        check = "bun audit --audit-level=high"
+      }
+    }
+  }
+}

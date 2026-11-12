@@ -1,0 +1,27 @@
+{
+  "name": "@taitide/agent-browser-kit",
+  "version": "0.1.0",
+  "description": "Extended CLI shim for agent-browser with custom Chrome kernel and profile management.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taitide-labs/agent-browser-kit.git"
+  },
+  "bin": {
+    "agent-browser-kit": "bin/agent-browser-kit.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/cli.ts --outdir dist --target bun",
+    "test": "bun test",
+    "typecheck": "bun x tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}

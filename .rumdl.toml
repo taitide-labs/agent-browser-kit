@@ -1,0 +1,18 @@
+#:schema https://json.schemastore.org/rumdl.json
+
+[global]
+exclude = ["CHANGELOG.md"] # 忽略自动生成的更新日志
+disable = [
+  "MD013", # 允许长文本不硬换行
+  "MD024", # 允许存在同名子标题
+  "MD025", # 允许存在多个一级标题
+  "MD028", # 允许引用块中存在空行
+  "MD033", # 允许在文档中书写 HTML 标签
+  "MD041", # 不强制第一行必须是一级标题
+]
+
+[MD004]
+style = "dash" # 无序列表统一使用短横线 -
+
+[MD060]
+style = "compact" # 表格采用紧凑风格

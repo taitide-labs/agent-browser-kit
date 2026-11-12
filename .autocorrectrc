@@ -1,0 +1,9 @@
+textRules:
+  spellcheck: 0 # 关闭拼写检查
+
+ignore:
+  - "node_modules/**"
+  - "dist/**"
+  - ".rumdl_cache/**"
+  - "bun.lock"
+  - "CHANGELOG.md"

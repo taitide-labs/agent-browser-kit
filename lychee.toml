@@ -1,0 +1,4 @@
+#:schema https://json.schemastore.org/lychee.json
+
+offline = true
+exclude_path = ["node_modules", "dist", ".rumdl_cache", "bun.lock"]
