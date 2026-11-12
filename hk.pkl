@@ -25,7 +25,9 @@ steps {
   }
 
   ["typos"] = Builtins.typos
-  ["oxfmt"] = Builtins.oxfmt
+  ["oxfmt"] = (Builtins.oxfmt) {
+    exclude = List("CHANGELOG.md")
+  }
 
   ["oxlint"] {
     glob = List("*.ts", "*.js")
