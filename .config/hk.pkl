@@ -4,14 +4,14 @@ import "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Builtin
 steps {
   ["autocorrect"] {
     glob = List("*.md", "*.ts", "*.js")
-    check = "autocorrect --lint {{files}}"
-    fix = "autocorrect --fix {{files}}"
+    check = "autocorrect --config .config/autocorrectrc --lint {{files}}"
+    fix = "autocorrect --config .config/autocorrectrc --fix {{files}}"
   }
 
   ["rumdl"] {
     glob = List("*.md")
-    check = "rumdl check {{files}}"
-    fix = "rumdl check --fix {{files}}"
+    check = "rumdl check --config .config/rumdl.toml {{files}}"
+    fix = "rumdl check --config .config/rumdl.toml --fix {{files}}"
   }
 
   ["mmdr"] {
@@ -21,7 +21,7 @@ steps {
 
   ["lychee"] {
     glob = List("*.md")
-    check = "lychee --offline {{files}}"
+    check = "lychee --config .config/lychee.toml --offline {{files}}"
   }
 
   ["typos"] = Builtins.typos

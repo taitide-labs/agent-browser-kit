@@ -22,4 +22,4 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh pr close "$PR_NUMBER" --comment "感谢关注本项目。本仓库目前仅接受内部维护者的 Pull Request，暂不接受外部 PR。如有 Bug 反馈或功能建议，欢迎通过 Issue 提交。"
+          gh pr close "$PR_NUMBER" --comment "感谢关注本仓库。本仓库目前仅接受内部维护者的 Pull Request，暂不接受外部 PR。如有 Bug 反馈或功能建议，欢迎通过 Issue 提交。"

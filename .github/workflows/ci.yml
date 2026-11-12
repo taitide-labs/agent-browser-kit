@@ -36,17 +36,17 @@ jobs:
             docs:
               - '**/*.md'
               - 'docs/**'
-              - '.rumdl.toml'
-              - '.autocorrectrc'
-              - 'lychee.toml'
+              - '.config/rumdl.toml'
+              - '.config/autocorrectrc'
+              - '.config/lychee.toml'
             code:
               - '**'
               - '!**/*.md'
               - '!docs/**'
               - '!LICENSE'
-              - '!.rumdl.toml'
-              - '!.autocorrectrc'
-              - '!lychee.toml'
+              - '!.config/rumdl.toml'
+              - '!.config/autocorrectrc'
+              - '!.config/lychee.toml'
 
   docs:
     name: Docs Checks
