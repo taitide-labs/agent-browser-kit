@@ -1,6 +1,8 @@
 # 贡献指南
 
-欢迎向 `agent-browser-kit` 提交代码或文档改进。本仓库使用 `mise` 管理工具链、使用 `hk` 编排本地 Git Hooks，所有变更均通过 Pull Request 合入 `main` 分支。
+> 本项目目前仅接受内部维护者的 Pull Request，暂不接受外部 PR。欢迎通过 Issue 反馈 Bug 或功能建议。
+
+欢迎向 `agent-browser-kit` 提出改进建议。本仓库使用 `mise` 管理工具链、使用 `hk` 编排本地 Git Hooks，所有内部变更均通过 Pull Request 合入 `main` 分支。
 
 ## 1. 本地环境初始化
 
