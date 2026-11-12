@@ -105,13 +105,8 @@ jobs:
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install: true
-      - name: Install Gitleaks
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download --repo gitleaks/gitleaks --pattern '*_linux_x64.tar.gz' --output - | sudo tar -xz -C /usr/local/bin gitleaks
       - name: Scan for leaked secrets
-        run: gitleaks git --verbose --redact .
+        run: mise x -- gitleaks git --verbose --redact .
       - name: Audit dependencies with bun audit
         run: mise x -- bun audit --audit-level=high
 
