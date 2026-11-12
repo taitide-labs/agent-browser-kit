@@ -14,8 +14,8 @@ gitleaks = "8"
 
 [tasks."docs:check"]
 description = "Run all documentation, lint, and test checks"
-run = "hk check --all -q"
+run = "hk check --all --silent -n"
 
 [tasks."docs:fix"]
 description = "Auto-fix documentation, formatting, and lint issues"
-run = "hk fix --all -q"
+run = "hk fix --all --silent -n"
