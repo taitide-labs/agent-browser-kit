@@ -8,6 +8,7 @@ oxfmt = "latest"
 rumdl = "0.3.3"
 lychee = "0.24.2"
 typos = "1"
+gitleaks = "8"
 "github:huacnlee/autocorrect" = "2.16.3"
 "github:1jehuang/mermaid-rs-renderer" = "0.3.1"
 
