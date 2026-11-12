@@ -3,6 +3,8 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "draft": true,
+  "bump-minor-pre-major": true,
+  "include-commit-authors": true,
   "pull-request-header": "Automated release PR",
   "packages": {
     ".": {}
