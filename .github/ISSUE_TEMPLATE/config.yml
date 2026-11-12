@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞报告
+    url: https://github.com/taitide-labs/agent-browser-kit/security/advisories/new
+    about: 请勿公开提交安全漏洞，请使用私密漏洞报告提交。
