@@ -60,10 +60,11 @@ jobs:
         env:
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
+          pkg_name=$(jq -r '.name | split("/")[-1]' package.json)
           mkdir -p artifacts
-          tar -czf "artifacts/agent-browser-kit-${TAG}.tar.gz" bin dist package.json
+          tar -czf "artifacts/${pkg_name}-${TAG}.tar.gz" bin dist package.json
           cd artifacts
-          sha256sum agent-browser-kit-* > SHA256SUMS.txt
+          sha256sum *.tar.gz > SHA256SUMS.txt
       - name: Attest build provenance
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
