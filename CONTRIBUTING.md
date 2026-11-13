@@ -25,13 +25,13 @@ hk install --mise
 - 执行全量只读检查：
 
   ```sh
-  mise run docs:check
+  mise run check
   ```
 
 - 自动修复排版、Markdown 格式与代码格式：
 
   ```sh
-  mise run docs:fix
+  mise run fmt
   ```
 
 ## 3. 提交与版本规范
@@ -60,5 +60,5 @@ BREAKING CHANGE: <破坏性变更说明（可选）>
 ## 4. Pull Request 流程
 
 1. 从 `main` 分支创建特性或修复分支（仓库规则禁止直接向 `main` 推送）。
-2. 提交前确认本地 `mise run docs:check` 全部通过。
+2. 提交前确认本地 `mise run check` 全部通过。
 3. 创建 Pull Request，确保标题符合上述 Conventional Commits 规范，等待 `Merge Gate`（`Path Filter`、`Docs Checks`、`Checks`、`Security`）全部通过后使用 `Squash and merge` 合并。
