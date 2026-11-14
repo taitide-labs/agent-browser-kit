@@ -36,7 +36,7 @@ hk install --mise
 
 ## 3. 提交与版本规范
 
-本仓库采用 [Conventional Commits 1.0.0](https://www.conventionalcommits.org/) 规范提交信息，并遵循 [Semantic Versioning 2.0.0](https://semver.org/) 规范管理版本号。
+本仓库采用 [Conventional Commits 1.0.0](https://www.conventionalcommits.org/) 与 [How to Write a Git Commit Message](https://cbea.ms/git-commit/) 规范提交信息，并遵循 [Semantic Versioning 2.0.0](https://semver.org/) 规范管理版本号。
 
 所有提交信息须遵循以下格式：
 
@@ -61,4 +61,4 @@ BREAKING CHANGE: <破坏性变更说明（可选）>
 
 1. 从 `main` 分支创建特性或修复分支（仓库规则禁止直接向 `main` 推送）。
 2. 提交前确认本地 `mise run check` 全部通过。
-3. 创建 Pull Request，确保标题符合上述 Conventional Commits 规范，等待 `Merge Gate`（`Path Filter`、`Docs Checks`、`Checks`、`Security`）全部通过后使用 `Squash and merge` 合并。
+3. 创建 Pull Request，确保标题符合上述提交规范，等待 `Merge Gate`（`Path Filter`、`Docs Checks`、`Checks`、`Security`）全部通过后使用 `Squash and merge` 合并。
