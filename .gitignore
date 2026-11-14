@@ -4,3 +4,5 @@ dist/
 .rumdl_cache/
 .codegraph/
 .archify/
+archive/
+scripts/fingerprint-probe/
