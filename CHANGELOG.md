@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.5.1...v0.6.0) (2026-11-14)
+
+
+### Features
+
+* **browser:** mirror upstream chrome args with layered overrides and ephemeral sessions ([#29](https://github.com/taitide-labs/agent-browser-kit/issues/29)) ([19ec408](https://github.com/taitide-labs/agent-browser-kit/commit/19ec408915a3bcf0e9ea0c4c84987d16a60d8289))
+* **plugin:** add structured help command ([#27](https://github.com/taitide-labs/agent-browser-kit/issues/27)) ([cd48436](https://github.com/taitide-labs/agent-browser-kit/commit/cd484364a7fa0afc21e72c609dad171a3235e6be))
+
 ## [0.5.1](https://github.com/taitide-labs/agent-browser-kit/compare/v0.5.0...v0.5.1) (2026-11-14)
 
 
