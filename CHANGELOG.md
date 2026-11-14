@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.4.0...v0.5.0) (2026-11-14)
+
+
+### Features
+
+* **plugin:** 实现 fingerprint-chromium 多账号隔离插件与内核管理 ([#24](https://github.com/taitide-labs/agent-browser-kit/issues/24)) ([2d9798c](https://github.com/taitide-labs/agent-browser-kit/commit/2d9798c907c47e0937363c2f6b1d565bfd583ca2))
+
+
+### Bug Fixes
+
+* **ci:** 从 package.json 动态读取包名避免硬编码 ([#22](https://github.com/taitide-labs/agent-browser-kit/issues/22)) ([48a145c](https://github.com/taitide-labs/agent-browser-kit/commit/48a145cb283166c7659f530f5759d5eb010ccfb3))
+* **release:** 启用 force-tag-creation 并显式设置 GH_REPO ([#23](https://github.com/taitide-labs/agent-browser-kit/issues/23)) ([8c769e4](https://github.com/taitide-labs/agent-browser-kit/commit/8c769e480e0499545febf4f17cf0ce190eaf26cc))
+
 ## [0.4.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.3.0...v0.4.0) (2026-11-12)
 
 
