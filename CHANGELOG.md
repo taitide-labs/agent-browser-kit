@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.4...v0.9.0) (2026-11-14)
+
+
+### Features
+
+* **profile:** 支持在 profile.create 中可选传入 seed ([#52](https://github.com/taitide-labs/agent-browser-kit/issues/52)) ([af6a1e0](https://github.com/taitide-labs/agent-browser-kit/commit/af6a1e0dd451979b402697a148dccbf79babd4c9))
+
 ## [0.8.4](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.3...v0.8.4) (2026-11-14)
 
 
