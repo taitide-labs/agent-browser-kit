@@ -48,7 +48,7 @@
 
 ## 验证命令参考
 
-日常校验可使用无头模式直接读取运行时返回值；需要人工目视页面或处理人机校验时再启用 `--headed`：
+日常校验可使用无头模式直接读取运行时返回值；需要人工目视页面或处理人机校验时再启用 `--headed`。若无头模式在 CreepJS 触发 `noTaskbar` 或 `hasVvpScreenRes`，请参阅 [headless-screen.md](headless-screen.md) 调整屏幕与工作区参数：
 
 ```sh
 # 1. 无头模式核对语言与时区返回值
