@@ -204,6 +204,7 @@ export function buildChromiumArgs(
 ): string[] {
   const upstreamArgs = buildUpstreamChromeArgs({ headless: !launchOptions.headed }, upstreamEnv);
   const kitLayer: Record<string, ArgOverrideValue> = {
+    "--no-startup-window": true,
     "--user-data-dir": profileDir,
     "--fingerprint": String(profile.fingerprint),
     "--fingerprint-brand": "Chrome",
