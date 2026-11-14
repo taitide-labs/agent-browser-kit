@@ -12,6 +12,10 @@ gitleaks = "8"
 "github:huacnlee/autocorrect" = "2.16.3"
 "github:1jehuang/mermaid-rs-renderer" = "0.3.1"
 
+[tasks.build]
+description = "Bundle plugin CLI artifact"
+run = "bun run build"
+
 [tasks.check]
 description = "Run all documentation, lint, and test checks"
 run = "hk check --all --silent -n"

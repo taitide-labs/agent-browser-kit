@@ -10,11 +10,26 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import manifestJson from "./kernel-manifest.json" with { type: "json" };
-import { getConfigPath, getKernelsDir, getTempDir } from "./paths.ts";
-import type { KernelEntry, KernelManifest, KitConfig, PlatformKey } from "./types.ts";
+import { getConfigPath, getKernelsDir, getTempDir } from "@/config/paths.ts";
+import type {
+  KernelEntry,
+  KernelManifest,
+  KernelManifestEntry,
+  KitConfig,
+  PlatformKey,
+} from "@/protocol/types.ts";
+import manifestJson from "../../kernel-manifest.json" with { type: "json" };
 
 const DEFAULT_MANIFEST = manifestJson as KernelManifest;
+
+export function resolveManifestEntry(repo: string, entry: KernelManifestEntry): KernelEntry {
+  const assetName = entry.asset.replaceAll("{version}", entry.version);
+  return {
+    version: entry.version,
+    assetName,
+    url: `https://github.com/${repo}/releases/download/${encodeURIComponent(entry.version)}/${assetName}`,
+  };
+}
 
 export interface CommandResult {
   exitCode: number;
@@ -348,7 +363,7 @@ export async function installKernel(
 
   const entry = requestedVersion
     ? await fetchCloudRelease(manifest.repo, platformKey, requestedVersion, fetchFn)
-    : manifest.platforms[platformKey];
+    : resolveManifestEntry(manifest.repo, manifest.platforms[platformKey]);
 
   const executablePath = await downloadAndActivateKernel(
     storageRoot,

@@ -16,7 +16,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "bun build src/cli.ts --outdir dist --target bun",
+    "build": "bun build src/cli/index.ts --outfile dist/cli.js --target bun",
     "test": "bun test",
     "typecheck": "bun x tsc --noEmit"
   },

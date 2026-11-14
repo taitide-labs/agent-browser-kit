@@ -1,37 +1,19 @@
-import { existsSync, mkdirSync, rmSync } from "node:fs";
-import pkg from "../package.json";
+import pkg from "../../package.json";
+import { buildChromiumArgs } from "@/browser/args.ts";
+import { launchChromiumProcess } from "@/browser/lifecycle.ts";
 import {
-  assertValidAccount,
-  getDefaultEphemeralRoot,
-  getEphemeralRuntimeStatePath,
-  getEphemeralSessionDir,
-  getProfileDir,
-  getRuntimeStatePath,
-} from "./paths.ts";
-import {
-  buildChromiumArgs,
-  cleanupStaleLocks,
-  isCdpUrlReachable,
-  isProcessAlive,
-  launchChromiumProcess,
-  readRuntimeState,
-  terminateProcess,
-  writeRuntimeState,
-} from "./process.ts";
-import {
-  createOrUpdateProfile,
-  deleteProfile,
-  generateFingerprint,
-  listProfiles,
-  readProfileConfig,
-} from "./profile.ts";
+  cleanupSessionOnClose,
+  prepareSessionLaunch,
+  saveSessionRuntime,
+} from "@/browser/session.ts";
 import {
   getKernelStatus,
   installKernel,
   requireActiveKernelPath,
   upgradeKernel,
   type KernelDeps,
-} from "./kernel.ts";
+} from "@/kernel/manager.ts";
+import { createOrUpdateProfile, deleteProfile, listProfiles } from "@/profile/store.ts";
 import type { LaunchOptions, PluginRequest, PluginResponse } from "./types.ts";
 
 const PROTOCOL = "agent-browser.plugin.v1" as const;
@@ -54,6 +36,7 @@ const COMMAND_HELP = {
       acceptLang: "string | null (optional)",
       platform: "string | null (optional)",
       windowSize: "string | null (optional)",
+      argOverrides: "Record<string, string | boolean | null> | null (optional)",
       regenerate: "boolean (optional)",
     },
     example:
@@ -129,7 +112,12 @@ function fail(message: string): PluginResponse {
   };
 }
 
-function launchSuccess(session: string, cdpUrl: string, pid: number): PluginResponse {
+function launchSuccess(
+  session: string,
+  cdpUrl: string,
+  pid: number,
+  ephemeralDir?: string,
+): PluginResponse {
   return {
     protocol: PROTOCOL,
     success: true,
@@ -138,7 +126,7 @@ function launchSuccess(session: string, cdpUrl: string, pid: number): PluginResp
       directPage: false,
       metadata: { sessionId: session, pid },
       // agent-browser only invokes browser.close when cleanup.sessionId is returned on launch.
-      cleanup: { sessionId: session },
+      cleanup: ephemeralDir ? { sessionId: session, ephemeralDir } : { sessionId: session },
     },
   };
 }
@@ -147,68 +135,37 @@ async function handleBrowserLaunch(
   ctx: PluginContext,
   request: Record<string, unknown>,
 ): Promise<PluginResponse> {
-  const session = assertValidAccount(String(request.session ?? ""));
+  const session = String(request.session ?? "");
   const executablePath = requireActiveKernelPath(ctx.storageRoot);
-  const ephemeralRoot = ctx.ephemeralRoot ?? getDefaultEphemeralRoot();
-  const savedProfile = readProfileConfig(ctx.storageRoot, session);
-  const ephemeral = savedProfile === null;
-  const profileDir = ephemeral
-    ? getEphemeralSessionDir(ephemeralRoot, session)
-    : getProfileDir(ctx.storageRoot, session);
-  const runtimePath = ephemeral
-    ? getEphemeralRuntimeStatePath(ephemeralRoot, session)
-    : getRuntimeStatePath(ctx.storageRoot, session);
-
-  const existing = readRuntimeState(runtimePath);
-  if (existing && isProcessAlive(existing.pid) && (await isCdpUrlReachable(existing.cdpUrl))) {
-    return launchSuccess(session, existing.cdpUrl, existing.pid);
+  const prepared = await prepareSessionLaunch(ctx.storageRoot, ctx.ephemeralRoot, session);
+  if (prepared.reused) {
+    return launchSuccess(
+      prepared.session,
+      prepared.reused.cdpUrl,
+      prepared.reused.pid,
+      prepared.ephemeral ? prepared.profileDir : undefined,
+    );
   }
 
-  if (ephemeral) {
-    if (existsSync(profileDir)) {
-      cleanupStaleLocks(profileDir, runtimePath);
-      rmSync(profileDir, { recursive: true, force: true });
-    }
-    mkdirSync(profileDir, { recursive: true });
-  } else {
-    cleanupStaleLocks(profileDir, runtimePath);
-  }
-
-  const profile = savedProfile ?? { fingerprint: generateFingerprint() };
   const launchOptions = (request.launchOptions ?? {}) as LaunchOptions;
-  const args = buildChromiumArgs(profileDir, profile, launchOptions);
-  const runtime = await launchChromiumProcess(executablePath, profileDir, args);
-  writeRuntimeState(runtimePath, runtime);
-  return launchSuccess(session, runtime.cdpUrl, runtime.pid);
+  const args = buildChromiumArgs(prepared.profileDir, prepared.profile, launchOptions);
+  const runtime = await launchChromiumProcess(executablePath, prepared.profileDir, args);
+  saveSessionRuntime(prepared, runtime);
+  return launchSuccess(
+    prepared.session,
+    runtime.cdpUrl,
+    runtime.pid,
+    prepared.ephemeral ? prepared.profileDir : undefined,
+  );
 }
 
 async function handleBrowserClose(
   ctx: PluginContext,
   request: Record<string, unknown>,
 ): Promise<PluginResponse> {
-  const session = assertValidAccount(String(request.sessionId ?? request.session ?? ""));
-  const ephemeralRoot = ctx.ephemeralRoot ?? getDefaultEphemeralRoot();
-
-  const persistentDir = getProfileDir(ctx.storageRoot, session);
-  const persistentRuntimePath = getRuntimeStatePath(ctx.storageRoot, session);
-  const persistentRuntime = readRuntimeState(persistentRuntimePath);
-  if (persistentRuntime && isProcessAlive(persistentRuntime.pid)) {
-    await terminateProcess(persistentRuntime.pid);
-  }
-  if (existsSync(persistentDir)) {
-    cleanupStaleLocks(persistentDir, persistentRuntimePath);
-  }
-
-  const ephemeralDir = getEphemeralSessionDir(ephemeralRoot, session);
-  const ephemeralRuntimePath = getEphemeralRuntimeStatePath(ephemeralRoot, session);
-  const ephemeralRuntime = readRuntimeState(ephemeralRuntimePath);
-  if (ephemeralRuntime && isProcessAlive(ephemeralRuntime.pid)) {
-    await terminateProcess(ephemeralRuntime.pid);
-  }
-  if (existsSync(ephemeralDir)) {
-    rmSync(ephemeralDir, { recursive: true, force: true });
-  }
-
+  const session = String(request.sessionId ?? request.session ?? "");
+  const ephemeralDir = typeof request.ephemeralDir === "string" ? request.ephemeralDir : undefined;
+  await cleanupSessionOnClose(ctx.storageRoot, ctx.ephemeralRoot, session, ephemeralDir);
   return {
     protocol: PROTOCOL,
     success: true,

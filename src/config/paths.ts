@@ -8,15 +8,7 @@ export function getDefaultStorageRoot(): string {
 }
 
 export function getDefaultEphemeralRoot(): string {
-  return join(tmpdir(), "agent-browser-kit", "sessions");
-}
-
-export function getEphemeralSessionDir(ephemeralRoot: string, account: string): string {
-  return join(ephemeralRoot, assertValidAccount(account));
-}
-
-export function getEphemeralRuntimeStatePath(ephemeralRoot: string, account: string): string {
-  return join(getEphemeralSessionDir(ephemeralRoot, account), "runtime.json");
+  return join(tmpdir(), "agent-browser-kit");
 }
 
 export function getConfigPath(storageRoot: string): string {
@@ -54,4 +46,8 @@ export function getFingerprintPath(storageRoot: string, account: string): string
 
 export function getRuntimeStatePath(storageRoot: string, account: string): string {
   return join(getProfileDir(storageRoot, account), "runtime.json");
+}
+
+export function getEphemeralIndexPath(ephemeralRoot: string, account: string): string {
+  return join(ephemeralRoot, `${assertValidAccount(account)}.runtime.json`);
 }

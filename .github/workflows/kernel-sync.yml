@@ -33,20 +33,20 @@ jobs:
       - name: Check upstream releases
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: mise x -- bun run src/sync-kernel-manifest.ts
+        run: mise x -- bun run scripts/sync-kernel-manifest.ts
       - name: Create pull request if manifest updated
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if git diff --quiet src/kernel-manifest.json; then
+          if git diff --quiet kernel-manifest.json; then
             exit 0
           fi
           branch="chore/kernel-manifest-sync"
           git config user.name "taitide-release-bot[bot]"
           git config user.email "taitide-release-bot[bot]@users.noreply.github.com"
           git checkout -B "$branch"
-          git add src/kernel-manifest.json
+          git add kernel-manifest.json
           git commit -m "chore(kernel): 同步 fingerprint-chromium 上游版本清单"
           gh auth setup-git
           git push -f origin "$branch"
