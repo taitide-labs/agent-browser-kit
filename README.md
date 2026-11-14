@@ -32,6 +32,12 @@
 
 ## Usage
 
+查看插件支持的全部命令与参数说明：
+
+```sh
+agent-browser plugin run kit help
+```
+
 ### 多账号浏览（懒初始化）
 
 直接传入 `--session <account>` 即可使用；首次访问未建档账号时，插件会自动生成 `~/.local/share/agent-browser-kit/profiles/<account>/fp.json` 并持久复用同一身份：

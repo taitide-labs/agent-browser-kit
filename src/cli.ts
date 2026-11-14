@@ -4,7 +4,7 @@ import { handlePluginRequest } from "./plugin.ts";
 
 function printHelp(): void {
   console.log(
-    `agent-browser-kit ${pkg.version}\n\nagent-browser plugin for fingerprint-chromium multi-account isolation (stdio protocol: agent-browser.plugin.v1).\n\nOptions:\n  -h, --help     Print help\n  -V, --version  Print version`,
+    `agent-browser-kit ${pkg.version}\n\nagent-browser plugin for fingerprint-chromium multi-account isolation (stdio protocol: agent-browser.plugin.v1).\nRun "agent-browser plugin run kit help" for available plugin commands.\n\nOptions:\n  -h, --help     Print help\n  -V, --version  Print version`,
   );
 }
 
