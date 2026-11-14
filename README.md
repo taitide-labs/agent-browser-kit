@@ -16,18 +16,11 @@
    agent-browser plugin add @taitide/agent-browser-kit --name kit
    ```
 
-2. 在 `~/.agent-browser/config.json` 中将 `kit` 设为默认提供方：
+2. 在 `~/.agent-browser/config.json` 顶层补充 `"provider": "kit"`，将其设为默认提供方（`plugins` 条目已由上一步自动写入）：
 
    ```json
    {
-     "provider": "kit",
-     "plugins": [
-       {
-         "name": "kit",
-         "command": "agent-browser-kit",
-         "capabilities": ["browser.provider", "command.run"]
-       }
-     ]
+     "provider": "kit"
    }
    ```
 

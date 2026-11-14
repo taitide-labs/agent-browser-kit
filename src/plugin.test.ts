@@ -112,8 +112,8 @@ describe("plugin.manifest and routing", () => {
       },
     );
     expect(res.success).toBe(true);
-    expect(res.name).toBe("kit");
-    expect(res.capabilities).toEqual(["browser.provider", "command.run"]);
+    expect(res.manifest?.name).toBe("kit");
+    expect(res.manifest?.capabilities).toEqual(["browser.provider", "command.run"]);
   });
 
   test("rejects invalid account names", async () => {

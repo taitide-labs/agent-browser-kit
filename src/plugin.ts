@@ -157,8 +157,10 @@ export async function handlePluginRequest(
       return {
         protocol: PROTOCOL,
         success: true,
-        name: "kit",
-        capabilities: ["browser.provider", "command.run"],
+        manifest: {
+          name: "kit",
+          capabilities: ["browser.provider", "command.run"],
+        },
       };
     }
     if (req.type === "browser.launch") {

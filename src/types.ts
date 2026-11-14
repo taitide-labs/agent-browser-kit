@@ -53,8 +53,11 @@ export interface PluginResponse {
   protocol: "agent-browser.plugin.v1";
   success: boolean;
   error?: string;
-  name?: string;
-  capabilities?: string[];
+  manifest?: {
+    name: string;
+    capabilities: string[];
+    description?: string;
+  };
   browser?: {
     cdpUrl: string;
     directPage: boolean;
