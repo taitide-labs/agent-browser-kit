@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Kernel Manifest Sync
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  sync:
+    name: Sync Upstream Kernel Manifest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          install: true
+      - name: Check upstream releases
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: mise x -- bun run src/sync-kernel-manifest.ts
+      - name: Create pull request if manifest updated
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if git diff --quiet src/kernel-manifest.json; then
+            exit 0
+          fi
+          branch="chore/kernel-manifest-sync"
+          git config user.name "taitide-release-bot[bot]"
+          git config user.email "taitide-release-bot[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add src/kernel-manifest.json
+          git commit -m "chore(kernel): 同步 fingerprint-chromium 上游版本清单"
+          gh auth setup-git
+          git push -f origin "$branch"
+          existing=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number')
+          if [ -z "$existing" ]; then
+            gh pr create \
+              --title "chore(kernel): 同步 fingerprint-chromium 上游版本清单" \
+              --body "自动检测到 adryfish/fingerprint-chromium 新版本，已同步更新平台清单。"
+          fi
