@@ -3,6 +3,7 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "draft": true,
+  "force-tag-creation": true,
   "bump-minor-pre-major": true,
   "include-commit-authors": true,
   "pull-request-header": "Automated release PR",
