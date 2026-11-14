@@ -79,15 +79,15 @@ agent-browser dashboard start
 
 所有管理命令通过 `agent-browser plugin run kit <command>` 调用，完整参数与示例可通过 `help` 查看：
 
-| 命令             | 说明                               |
-| :--------------- | :--------------------------------- |
-| `help`           | 查看全部命令清单、参数说明与示例   |
+| 命令 | 说明 |
+| :--- | :--- |
+| `help` | 查看全部命令清单、参数说明与示例 |
 | `kernel.install` | 下载并激活指纹内核（已安装时跳过） |
-| `kernel.upgrade` | 检查并升级至最新指纹内核           |
-| `kernel.status`  | 查看当前激活的内核版本与路径       |
-| `profile.create` | 创建或更新账号档案                 |
-| `profile.list`   | 列出已创建的账号档案               |
-| `profile.delete` | 删除指定账号档案及数据目录         |
+| `kernel.upgrade` | 检查并升级至最新指纹内核 |
+| `kernel.status` | 查看当前激活的内核版本与路径 |
+| `profile.create` | 创建或更新账号档案 |
+| `profile.list` | 列出已创建的账号档案 |
+| `profile.delete` | 删除指定账号档案及数据目录 |
 
 配置说明：
 
