@@ -6,7 +6,7 @@
       "asset": "ungoogled-chromium_{version}-1.1_macos.dmg"
     },
     "linux-x64": {
-      "version": "150.0.7871.0",
+      "version": "150.0.7871.186",
       "asset": "ungoogled-chromium-{version}-1-x86_64_linux.tar.xz"
     }
   }
