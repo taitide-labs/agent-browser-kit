@@ -4,13 +4,13 @@
 
 ## Background
 
-使用原版 `agent-browser` 执行多账号自动化任务时，默认共享本地浏览器环境且缺少持久化硬件指纹隔离。`agent-browser-kit` 通过 `agent-browser.plugin.v1` 标准输入输出协议接入，为每个 `--session <account>` 维护独立的账号目录与 32 位持久化 `fingerprint`，并统一托管指纹内核的下载与升级。
+直接使用原生 `agent-browser` 运行多账号任务时，不同会话默认共享同一浏览器环境，容易产生状态串号与环境特征关联。`agent-browser-kit` 为每个会话分配独立的用户数据目录与持久化硬件指纹，并统一托管指纹内核的安装与升级。
 
 ## Install
 
 前置条件：本机已安装 [Bun](https://bun.sh/) 与 [agent-browser](https://github.com/vercel-labs/agent-browser)。
 
-1. 在 `~/.agent-browser/config.json` 中注册 `kit` 插件并设为默认提供方：
+1. 在 `~/.agent-browser/config.json` 中启用 `kit` 插件并设为默认提供方：
 
    ```json
    {
@@ -27,7 +27,7 @@
    }
    ```
 
-2. 下载并初始化指纹内核（安装时会自动记录当前系统对应的 `kernel.platform`）：
+2. 下载并初始化指纹内核：
 
    ```sh
    agent-browser plugin run kit kernel.install
@@ -35,56 +35,37 @@
 
 ## Usage
 
-查看插件支持的全部命令、参数及仓库地址：
+### 临时会话
+
+直接传入未建档的 `--session <name>` 即可启动隔离会话，浏览数据与随机指纹仅在本次会话期间有效，执行 `close` 后自动清理：
 
 ```sh
-agent-browser plugin run kit help
+agent-browser --session temp-01 open "https://example.com"
+agent-browser --session temp-01 close
 ```
 
-### 多账号浏览与临时会话
+### 持久账号
 
-- **临时会话**：未提前创建档案直接传入 `--session <name>` 时，浏览器数据放在系统临时目录并随机生成本次 `--fingerprint`，`close` 后自动删除临时目录。
-- **持久账号**：先通过 `profile.create` 创建档案后再用 `--session <account>` 启动，配置集中保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 下，浏览器数据目录 `~/.local/share/agent-browser-kit/profiles/<account>/` 会长期保留；未指定 `windowSize` 时默认使用 `1920,1080`（无头模式下自动同步 `--screen-info={宽x高}`）。
+通过 `profile.create` 创建账号档案后，同一 `--session <account>` 会在多次启动间保留登录态、缓存与固定指纹：
 
 ```sh
+agent-browser plugin run kit profile.create --payload '{
+  "account": "account-01",
+  "proxy": "http://127.0.0.1:7890",
+  "timezone": "America/New_York",
+  "lang": "en-US",
+  "acceptLang": "en-US,en",
+  "windowSize": "1440,900"
+}'
+
 agent-browser --session account-01 --input-mode human --headed open "https://example.com"
 agent-browser --session account-01 tab new "https://example.com/settings"
 agent-browser --session account-01 close
 ```
 
-### 账号档案与全局配置
-
-在 `~/.local/share/agent-browser-kit/config.json` 中可由用户按需自行添加全局 `defaults`，运行时按 **`CLI > 账号配置 > 全局配置 > Kit 默认 > 上游 1:1`** 顺序合并参数；任意 `--*` 开关传 `null` 即表示删除该参数：
-
-```sh
-agent-browser plugin run kit profile.create --payload '{
-  "account": "account-02",
-  "proxy": "http://127.0.0.1:7890",
-  "timezone": "America/New_York",
-  "lang": "en-US",
-  "acceptLang": "en-US,en",
-  "windowSize": "1440,900",
-  "--disable-sync": null
-}'
-
-agent-browser plugin run kit profile.list
-agent-browser plugin run kit profile.delete --payload '{"account":"account-02"}'
-```
-
-### 内核管理
-
-- `kernel.install`：仅在本地未安装有效内核时下载并激活，同时记录 `kernel.platform`；已存在时直接跳过。
-- `kernel.upgrade`：本地未安装时下载安装；已安装且上游存在新版本时自动拉取并切换激活版本。
-- `kernel.status`：查看当前激活的内核版本、平台与路径。
-
-```sh
-agent-browser plugin run kit kernel.status
-agent-browser plugin run kit kernel.upgrade
-```
-
 ### 人工接管
 
-遇到强人机校验时，启动 `agent-browser` 监控面板手动完成验证，认证状态会直接持久化至对应账号目录：
+遇到强人机校验时，可启动监控面板手动完成验证，登录与验证状态会保留在对应账号目录中：
 
 ```sh
 agent-browser dashboard start
@@ -92,7 +73,26 @@ agent-browser dashboard start
 
 ### 检测与验证
 
-常见浏览器指纹、Bot 检测、协议泄漏与区域一致性测试站点请参阅 [detection-sites.md](docs/detection-sites.md)。
+常见浏览器指纹、自动化特征与网络泄漏测试网站请参阅 [detection-sites.md](docs/detection-sites.md)。
+
+## API
+
+所有管理命令通过 `agent-browser plugin run kit <command>` 调用，完整参数与示例可通过 `help` 查看：
+
+| 命令             | 说明                               |
+| :--------------- | :--------------------------------- |
+| `help`           | 查看全部命令清单、参数说明与示例   |
+| `kernel.install` | 下载并激活指纹内核（已安装时跳过） |
+| `kernel.upgrade` | 检查并升级至最新指纹内核           |
+| `kernel.status`  | 查看当前激活的内核版本与路径       |
+| `profile.create` | 创建或更新账号档案                 |
+| `profile.list`   | 列出已创建的账号档案               |
+| `profile.delete` | 删除指定账号档案及数据目录         |
+
+配置说明：
+
+- 账号配置与全局默认配置统一保存在 `~/.local/share/agent-browser-kit/config.json`，如需为所有账号设置公共参数，可在其中添加 `defaults` 字段。
+- 任意 Chromium 开关参数传 `null`（例如 `"--disable-sync": null`）即可移除该默认参数。
 
 ## Contributing
 
