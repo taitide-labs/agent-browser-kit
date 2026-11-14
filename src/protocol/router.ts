@@ -6,6 +6,7 @@ import {
   prepareSessionLaunch,
   saveSessionRuntime,
 } from "@/browser/session.ts";
+import { getConfigPath } from "@/config/paths.ts";
 import { readGlobalDefaults } from "@/config/store.ts";
 import {
   getKernelStatus,
@@ -18,63 +19,57 @@ import { createOrUpdateProfile, deleteProfile, listProfiles } from "@/profile/st
 import type { LaunchOptions, PluginRequest, PluginResponse } from "./types.ts";
 
 const PROTOCOL = "agent-browser.plugin.v1" as const;
+const REPOSITORY_URL = pkg.repository.url.replace(/\.git$/, "");
 
 const COMMAND_HELP = {
   help: {
-    description: "List available plugin commands and payload schemas.",
+    description: "List commands (?command)",
     payload: {
-      command: "string (optional)",
+      command: "string",
     },
-    example: "agent-browser plugin run kit help",
   },
   "profile.create": {
-    description: "Create or update an isolated account profile and fingerprint.",
+    description: "Create or update profile & fingerprint",
     payload: {
       account: "string (required)",
-      proxy: "string | null (optional)",
-      timezone: "string | null (optional)",
-      lang: "string | null (optional)",
-      acceptLang: "string | null (optional)",
-      windowSize: "string | null (optional)",
-      "--*": "string | boolean | null (optional, pass any Chromium flag directly)",
+      proxy: "string | null",
+      timezone: "string | null",
+      lang: "string | null",
+      acceptLang: "string | null",
+      windowSize: "string | null",
+      "--*": "string | boolean | null",
     },
-    example:
-      'agent-browser plugin run kit profile.create --payload \'{"account":"account-01","proxy":"http://127.0.0.1:7890","--disable-sync":null}\'',
   },
   "profile.list": {
-    description: "List stored account profiles and running status.",
-    payload: {},
-    example: "agent-browser plugin run kit profile.list",
+    description: "List profiles and running status",
   },
   "profile.delete": {
-    description: "Stop any running browser for the account and delete its profile directory.",
+    description: "Stop browser and delete profile",
     payload: {
       account: "string (required)",
     },
-    example: 'agent-browser plugin run kit profile.delete --payload \'{"account":"account-01"}\'',
   },
   "kernel.install": {
-    description: "Download and activate the fingerprint-chromium kernel if not already installed.",
+    description: "Install kernel from manifest (?version)",
     payload: {
-      version: "string (optional)",
+      version: "string",
     },
-    example: "agent-browser plugin run kit kernel.install",
   },
   "kernel.upgrade": {
-    description: "Install the kernel if missing, or upgrade to a newer release from upstream.",
+    description: "Upgrade kernel from upstream (?version)",
     payload: {
-      version: "string (optional)",
+      version: "string",
     },
-    example: "agent-browser plugin run kit kernel.upgrade",
   },
   "kernel.status": {
-    description: "Show the currently active kernel version and executable path.",
-    payload: {},
-    example: "agent-browser plugin run kit kernel.status",
+    description: "Show active kernel status",
   },
 } as const;
 
-function getHelpData(payload: Record<string, unknown>): Record<string, unknown> {
+function getHelpData(
+  storageRoot: string,
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
   const requested = typeof payload.command === "string" ? payload.command.trim() : "";
   if (requested) {
     const spec = COMMAND_HELP[requested as keyof typeof COMMAND_HELP];
@@ -84,6 +79,7 @@ function getHelpData(payload: Record<string, unknown>): Record<string, unknown> 
     return {
       plugin: "kit",
       version: pkg.version,
+      repository: REPOSITORY_URL,
       command: requested,
       ...spec,
     };
@@ -91,8 +87,8 @@ function getHelpData(payload: Record<string, unknown>): Record<string, unknown> 
   return {
     plugin: "kit",
     version: pkg.version,
-    protocol: PROTOCOL,
-    capabilities: ["browser.provider", "command.run"],
+    repository: REPOSITORY_URL,
+    config: getConfigPath(storageRoot),
     commands: COMMAND_HELP,
   };
 }
@@ -189,7 +185,7 @@ async function handleCommand(
       return {
         protocol: PROTOCOL,
         success: true,
-        data: getHelpData(payload),
+        data: getHelpData(ctx.storageRoot, payload),
       };
     case "profile.create":
       return {

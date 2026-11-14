@@ -56,7 +56,7 @@ sequenceDiagram
 
 ### 3.1 全局配置与插件协议
 
-通过 `agent-browser plugin add @taitide/agent-browser-kit --name kit` 安装插件，并在 `~/.agent-browser/config.json` 中设为默认提供方：
+在 `~/.agent-browser/config.json` 中注册 `kit` 插件（使用 `bunx` 启动）并设为默认提供方：
 
 ```json
 {
@@ -65,8 +65,8 @@ sequenceDiagram
   "plugins": [
     {
       "name": "kit",
-      "command": "npx",
-      "args": ["-y", "@taitide/agent-browser-kit"],
+      "command": "bunx",
+      "args": ["@taitide/agent-browser-kit"],
       "capabilities": ["browser.provider", "command.run"]
     }
   ]

@@ -140,9 +140,17 @@ describe("plugin manifest, help, and profile commands", () => {
     expect(allHelp.success).toBe(true);
     const data = allHelp.data as {
       plugin: string;
+      repository: string;
+      config: string;
+      capabilities?: unknown;
+      protocol?: unknown;
       commands: Record<string, { description: string }>;
     };
     expect(data.plugin).toBe("kit");
+    expect(data.repository).toBe("https://github.com/taitide-labs/agent-browser-kit");
+    expect(data.config.endsWith("/config.json")).toBe(true);
+    expect(data.capabilities).toBeUndefined();
+    expect(data.protocol).toBeUndefined();
     expect(Object.keys(data.commands)).toEqual([
       "help",
       "profile.create",
