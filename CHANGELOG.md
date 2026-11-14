@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/taitide-labs/agent-browser-kit/compare/v0.5.0...v0.5.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **plugin:** 按 agent-browser 协议将 plugin.manifest 响应包裹在 manifest 字段中 ([#25](https://github.com/taitide-labs/agent-browser-kit/issues/25)) ([155ccdd](https://github.com/taitide-labs/agent-browser-kit/commit/155ccddeb778bd109aa1e35a0ace437d0fc07fc7))
+
 ## [0.5.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.4.0...v0.5.0) (2026-11-14)
 
 
