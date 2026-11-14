@@ -3,7 +3,7 @@
 ## 1. 目标与边界
 
 - **调用极简**：业务侧通过 `agent-browser --session <account>` 指定会话名，经全局配置自动路由至 `kit` 插件完成环境拉起。
-- **持久与临时分离**：通过 `profile.create` 预建的账号配置集中保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 字段（含 32 位随机 `fingerprint`），浏览器持久数据目录位于 `~/.local/share/agent-browser-kit/profiles/<account>`；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
+- **持久与临时分离**：通过 `profile.create` 预建的账号配置集中保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 字段（含随机有符号 32 位正整数 `fingerprint`），浏览器持久数据目录位于 `~/.local/share/agent-browser-kit/profiles/<account>`；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
 - **拟人化与接管**：通过 `--input-mode human` 启用人类指针轨迹，并在触发强校验时通过 `Dashboard` 接入人工验证。
 - **进程边界**：单账号对应单个浏览器进程；同账号并发任务通过同一进程内多标签页执行。
 
@@ -92,7 +92,7 @@ sequenceDiagram
   - `kernels/<version>/`：按版本存放已下载的内核文件。
   - `profiles/<account>/`：仅存放该账号的 Chromium 运行态与浏览数据目录（无额外 `fp.json`）。
 - **账号元数据**：
-  - `fingerprint`：建档时通过密码学安全随机数生成器（CSPRNG）生成的 32 位无符号整数（`1` 至 `4294967295`），持久化后跨重启复用。
+  - `fingerprint`：建档时通过密码学安全随机数生成器（CSPRNG）生成的有符号 32 位正整数（`1` 至 `2147483647`，避免上游 `002-user-agent-fingerprint.patch` 使用 `base::StringToInt` 解析时发生 `INT_MAX` 溢出截断），持久化后跨重启复用。
   - 可选覆盖字段：`proxy`、`timezone`、`lang`、`acceptLang`、`windowSize` 及任意 `--*` Chromium 开关。
 
 ### 3.3 内核拉起与五段参数合并

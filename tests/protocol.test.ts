@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getProfileDir } from "@/config/paths.ts";
 import { readKitConfig } from "@/config/store.ts";
+import { generateFingerprint, MAX_FINGERPRINT_SEED } from "@/profile/store.ts";
 import { handlePluginRequest } from "@/protocol/router.ts";
 
 const tempDirs: string[] = [];
@@ -80,7 +81,7 @@ describe("plugin manifest, help, and profile commands", () => {
     };
     expect(data.account).toBe("acct-1");
     expect(data.fingerprint).toBeGreaterThanOrEqual(1);
-    expect(data.fingerprint).toBeLessThanOrEqual(4294967295);
+    expect(data.fingerprint).toBeLessThanOrEqual(MAX_FINGERPRINT_SEED);
     expect(data["--disable-sync"]).toBeNull();
     expect(readKitConfig(root).profiles?.["acct-1"]?.fingerprint).toBe(data.fingerprint);
 
@@ -184,5 +185,14 @@ describe("plugin manifest, help, and profile commands", () => {
     );
     expect(invalidHelp.success).toBe(false);
     expect(invalidHelp.error).toContain("Unsupported plugin command");
+  });
+
+  test("generateFingerprint stays within signed 32-bit positive integer range", () => {
+    for (let i = 0; i < 200; i += 1) {
+      const seed = generateFingerprint();
+      expect(Number.isInteger(seed)).toBe(true);
+      expect(seed).toBeGreaterThanOrEqual(1);
+      expect(seed).toBeLessThanOrEqual(2147483647);
+    }
   });
 });
