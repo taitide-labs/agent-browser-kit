@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.0...v0.8.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **cli:** 精简 help 输出并切换 bunx 配置说明 ([#34](https://github.com/taitide-labs/agent-browser-kit/issues/34)) ([1280e03](https://github.com/taitide-labs/agent-browser-kit/commit/1280e0331d71cde9bfd10cebde1aa16e75043486))
+
 ## [0.8.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.7.0...v0.8.0) (2026-11-14)
 
 
