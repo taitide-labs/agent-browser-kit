@@ -90,6 +90,10 @@ agent-browser plugin run kit kernel.upgrade
 agent-browser dashboard start
 ```
 
+### 检测与验证
+
+常见浏览器指纹、Bot 检测、协议泄漏与区域一致性测试站点请参阅 [detection-sites.md](docs/detection-sites.md)。
+
 ## Contributing
 
 请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
