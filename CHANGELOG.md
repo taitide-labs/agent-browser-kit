@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.7.0...v0.8.0) (2026-11-14)
+
+
+### Features
+
+* **config:** 统一 config.json 配置管理并按内核平台与视口派生参数 ([#32](https://github.com/taitide-labs/agent-browser-kit/issues/32)) ([3505634](https://github.com/taitide-labs/agent-browser-kit/commit/35056343dd10e630e4605459af974f3d86c7c507))
+
 ## [0.7.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.6.0...v0.7.0) (2026-11-14)
 
 
