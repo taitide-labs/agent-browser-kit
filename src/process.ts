@@ -2,6 +2,9 @@ import { existsSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "n
 import { createConnection } from "node:net";
 import { join } from "node:path";
 import type { LaunchOptions, ProfileConfig, RuntimeState } from "./types.ts";
+import { buildUpstreamChromeArgs, type UpstreamEnv } from "./upstream-args.ts";
+
+const DEFAULT_WINDOW_SIZE = "1920,1080";
 
 const LOCK_FILES = [
   "SingletonLock",
@@ -119,25 +122,70 @@ export async function terminateProcess(pid: number, timeoutMs = 5000): Promise<v
   } catch {}
 }
 
-export function buildChromiumArgs(
-  profileDir: string,
-  profile: ProfileConfig,
-  launchOptions: LaunchOptions,
-): string[] {
+function getFlagKey(flag: string): string {
+  if (flag === "--headless" || flag.startsWith("--headless=")) {
+    return "--headless";
+  }
+  const eqIndex = flag.indexOf("=");
+  if (flag.startsWith("--") && eqIndex > 2) {
+    return flag.slice(0, eqIndex);
+  }
+  return flag;
+}
+
+export function mergeChromiumArgs(...layers: string[][]): string[] {
+  const merged: string[] = [];
+  const enabledFeatures: string[] = [];
+  let featureSlotIndex = -1;
+
+  for (const layer of layers) {
+    for (const rawFlag of layer) {
+      const flag = rawFlag.trim();
+      if (!flag) {
+        continue;
+      }
+      if (flag.startsWith("--enable-features=")) {
+        const items = flag
+          .slice("--enable-features=".length)
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+        for (const item of items) {
+          if (!enabledFeatures.includes(item)) {
+            enabledFeatures.push(item);
+          }
+        }
+        if (featureSlotIndex === -1) {
+          featureSlotIndex = merged.length;
+          merged.push(`--enable-features=${enabledFeatures.join(",")}`);
+        } else {
+          merged[featureSlotIndex] = `--enable-features=${enabledFeatures.join(",")}`;
+        }
+        continue;
+      }
+
+      const key = getFlagKey(flag);
+      const existingIndex = merged.findIndex((item) => getFlagKey(item) === key);
+      if (existingIndex !== -1) {
+        merged.splice(existingIndex, 1);
+        if (existingIndex < featureSlotIndex) {
+          featureSlotIndex -= 1;
+        }
+      }
+      merged.push(flag);
+    }
+  }
+
+  return merged;
+}
+
+export function buildKitOverrideArgs(profileDir: string, profile: ProfileConfig): string[] {
   const args = [
     `--user-data-dir=${profileDir}`,
-    "--remote-debugging-port=0",
     `--fingerprint=${profile.fingerprint}`,
     "--fingerprint-brand=Chrome",
-    "--no-first-run",
-    "--no-default-browser-check",
+    `--window-size=${profile.windowSize ?? DEFAULT_WINDOW_SIZE}`,
   ];
-  if (!launchOptions.headed) {
-    args.push("--headless=new");
-  }
-  if (launchOptions.userAgent) {
-    args.push(`--user-agent=${launchOptions.userAgent}`);
-  }
   if (profile.proxy) {
     args.push(`--proxy-server=${profile.proxy}`);
   }
@@ -153,10 +201,42 @@ export function buildChromiumArgs(
   if (profile.platform) {
     args.push(`--fingerprint-platform=${profile.platform}`);
   }
-  if (profile.windowSize) {
-    args.push(`--window-size=${profile.windowSize}`);
+  return args;
+}
+
+export function buildCliOverrideArgs(launchOptions: LaunchOptions): string[] {
+  const args: string[] = [];
+  if (launchOptions.userAgent) {
+    args.push(`--user-agent=${launchOptions.userAgent}`);
+  }
+  if (launchOptions.proxy) {
+    args.push(`--proxy-server=${launchOptions.proxy}`);
+  }
+  if (Array.isArray(launchOptions.args)) {
+    for (const arg of launchOptions.args) {
+      if (typeof arg === "string" && arg.trim()) {
+        args.push(arg.trim());
+      }
+    }
   }
   return args;
+}
+
+export function buildChromiumArgs(
+  profileDir: string,
+  profile: ProfileConfig,
+  launchOptions: LaunchOptions,
+  upstreamEnv?: UpstreamEnv,
+): string[] {
+  const upstreamArgs = buildUpstreamChromeArgs(
+    {
+      headless: !launchOptions.headed,
+    },
+    upstreamEnv,
+  );
+  const kitArgs = buildKitOverrideArgs(profileDir, profile);
+  const cliArgs = buildCliOverrideArgs(launchOptions);
+  return mergeChromiumArgs(upstreamArgs, kitArgs, cliArgs);
 }
 
 export async function launchChromiumProcess(
