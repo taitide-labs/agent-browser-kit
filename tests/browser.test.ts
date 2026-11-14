@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   chmodSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -61,10 +62,14 @@ sleep 30
         "utf8",
       );
       chmodSync(fakeBrowser, 0o755);
-      writeKitConfig(root, { kernel: { version: "148.0.7778.215", executablePath: fakeBrowser } });
+      writeKitConfig(root, {
+        kernel: { version: "148.0.7778.215", executablePath: fakeBrowser, platform: "macos" },
+        defaults: { "--mute-audio": true },
+      });
 
-      createOrUpdateProfile(root, { account: "verify-01" });
+      createOrUpdateProfile(root, { account: "verify-01", "--hide-scrollbars": null });
       const profileDir = getProfileDir(root, "verify-01");
+      mkdirSync(profileDir, { recursive: true });
       symlinkSync("localhost-9999999", join(profileDir, "SingletonLock"));
 
       const launch1 = await handlePluginRequest(
@@ -88,6 +93,9 @@ sleep 30
       expect(isProcessAlive(spawnedPid)).toBe(true);
       const argsLog = readFileSync(join(root, "launched-args.txt"), "utf8");
       expect(argsLog).toContain("--fingerprint-brand=Chrome");
+      expect(argsLog).toContain("--fingerprint-platform=macos");
+      expect(argsLog).toContain("--mute-audio");
+      expect(argsLog).not.toContain("--hide-scrollbars");
       expect(argsLog).not.toContain("--headless=new");
 
       const launch2 = await handlePluginRequest(

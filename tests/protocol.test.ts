@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getProfileDir } from "@/config/paths.ts";
+import { readKitConfig } from "@/config/store.ts";
 import { handlePluginRequest } from "@/protocol/router.ts";
 
 const tempDirs: string[] = [];
@@ -65,16 +66,23 @@ describe("plugin manifest, help, and profile commands", () => {
           timezone: "Asia/Tokyo",
           lang: "ja-JP",
           acceptLang: "ja-JP,ja",
-          platform: "macos",
           windowSize: "1440,900",
+          "--disable-sync": null,
         },
       },
     );
     expect(created.success).toBe(true);
-    const data = created.data as { account: string; fingerprint: number; proxy: string };
+    const data = created.data as {
+      account: string;
+      fingerprint: number;
+      proxy: string;
+      "--disable-sync": null;
+    };
     expect(data.account).toBe("acct-1");
     expect(data.fingerprint).toBeGreaterThanOrEqual(1);
     expect(data.fingerprint).toBeLessThanOrEqual(4294967295);
+    expect(data["--disable-sync"]).toBeNull();
+    expect(readKitConfig(root).profiles?.["acct-1"]?.fingerprint).toBe(data.fingerprint);
 
     const updated = await handlePluginRequest(
       { storageRoot: root },
@@ -89,6 +97,7 @@ describe("plugin manifest, help, and profile commands", () => {
       data.fingerprint,
     );
     expect((updated.data as { proxy?: string }).proxy).toBeUndefined();
+    expect((updated.data as Record<string, unknown>)["--disable-sync"]).toBeNull();
 
     const listed = await handlePluginRequest(
       { storageRoot: root },
@@ -114,6 +123,7 @@ describe("plugin manifest, help, and profile commands", () => {
     );
     expect(deleted.data).toEqual({ account: "acct-1", deleted: true });
     expect(existsSync(getProfileDir(root, "acct-1"))).toBe(false);
+    expect(readKitConfig(root).profiles).toBeUndefined();
   });
 
   test("returns structured command help for all commands or a single command", async () => {

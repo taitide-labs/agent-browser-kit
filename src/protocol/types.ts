@@ -19,24 +19,29 @@ export interface KernelManifest {
 export interface ActiveKernel {
   version: string;
   executablePath: string;
-}
-
-export interface KitConfig {
-  kernel?: ActiveKernel;
+  platform?: string;
 }
 
 export type ArgOverrideValue = string | boolean | null | undefined;
-export type ArgOverrideMap = Record<string, ArgOverrideValue>;
+export type ArgOverrideMap = Record<`--${string}`, ArgOverrideValue>;
 
-export interface ProfileConfig {
-  fingerprint: number;
+export interface BrowserDefaultsConfig {
   proxy?: string;
   timezone?: string;
   lang?: string;
   acceptLang?: string;
-  platform?: string;
   windowSize?: string;
-  argOverrides?: ArgOverrideMap;
+  [flag: `--${string}`]: ArgOverrideValue;
+}
+
+export interface ProfileConfig extends BrowserDefaultsConfig {
+  fingerprint: number;
+}
+
+export interface KitConfig {
+  kernel?: ActiveKernel;
+  defaults?: BrowserDefaultsConfig;
+  profiles?: Record<string, ProfileConfig>;
 }
 
 export interface RuntimeState {
@@ -52,8 +57,8 @@ export interface LaunchOptions {
   userAgent?: string | null;
   proxy?: string | null;
   windowSize?: string | null;
-  argOverrides?: ArgOverrideMap | null;
   args?: string[] | null;
+  [flag: `--${string}`]: ArgOverrideValue;
 }
 
 export interface PluginRequest {

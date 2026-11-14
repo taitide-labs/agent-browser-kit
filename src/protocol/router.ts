@@ -6,10 +6,11 @@ import {
   prepareSessionLaunch,
   saveSessionRuntime,
 } from "@/browser/session.ts";
+import { readGlobalDefaults } from "@/config/store.ts";
 import {
   getKernelStatus,
   installKernel,
-  requireActiveKernelPath,
+  requireActiveKernel,
   upgradeKernel,
   type KernelDeps,
 } from "@/kernel/manager.ts";
@@ -34,13 +35,11 @@ const COMMAND_HELP = {
       timezone: "string | null (optional)",
       lang: "string | null (optional)",
       acceptLang: "string | null (optional)",
-      platform: "string | null (optional)",
       windowSize: "string | null (optional)",
-      argOverrides: "Record<string, string | boolean | null> | null (optional)",
-      regenerate: "boolean (optional)",
+      "--*": "string | boolean | null (optional, pass any Chromium flag directly)",
     },
     example:
-      'agent-browser plugin run kit profile.create --payload \'{"account":"account-01","proxy":"http://127.0.0.1:7890"}\'',
+      'agent-browser plugin run kit profile.create --payload \'{"account":"account-01","proxy":"http://127.0.0.1:7890","--disable-sync":null}\'',
   },
   "profile.list": {
     description: "List stored account profiles and running status.",
@@ -136,7 +135,7 @@ async function handleBrowserLaunch(
   request: Record<string, unknown>,
 ): Promise<PluginResponse> {
   const session = String(request.session ?? "");
-  const executablePath = requireActiveKernelPath(ctx.storageRoot);
+  const kernel = requireActiveKernel(ctx.storageRoot);
   const prepared = await prepareSessionLaunch(ctx.storageRoot, ctx.ephemeralRoot, session);
   if (prepared.reused) {
     return launchSuccess(
@@ -148,8 +147,16 @@ async function handleBrowserLaunch(
   }
 
   const launchOptions = (request.launchOptions ?? {}) as LaunchOptions;
-  const args = buildChromiumArgs(prepared.profileDir, prepared.profile, launchOptions);
-  const runtime = await launchChromiumProcess(executablePath, prepared.profileDir, args);
+  const globalDefaults = readGlobalDefaults(ctx.storageRoot);
+  const args = buildChromiumArgs(
+    prepared.profileDir,
+    prepared.profile,
+    launchOptions,
+    undefined,
+    globalDefaults,
+    kernel.platform,
+  );
+  const runtime = await launchChromiumProcess(kernel.executablePath, prepared.profileDir, args);
   saveSessionRuntime(prepared, runtime);
   return launchSuccess(
     prepared.session,

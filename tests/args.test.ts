@@ -10,12 +10,14 @@ const CLEAN_ENV = {
 };
 
 describe("chromium arg layering and null deletion", () => {
-  test("mirrors upstream defaults and applies 1080p default window size", () => {
+  test("mirrors upstream defaults and derives headless 1080p screen-info", () => {
     const args = buildChromiumArgs(
       "/tmp/profiles/a1",
       { fingerprint: 123456 },
       { headed: false },
       CLEAN_ENV,
+      undefined,
+      "macos",
     );
     expect(args).toContain("--user-data-dir=/tmp/profiles/a1");
     expect(args).toContain("--remote-debugging-port=0");
@@ -34,12 +36,14 @@ describe("chromium arg layering and null deletion", () => {
     expect(args).toContain("--enable-unsafe-swiftshader");
     expect(args).toContain("--fingerprint=123456");
     expect(args).toContain("--fingerprint-brand=Chrome");
+    expect(args).toContain("--fingerprint-platform=macos");
+    expect(args).toContain("--screen-info={1920x1080}");
     expect(args.filter((arg) => arg.startsWith("--window-size="))).toEqual([
       "--window-size=1920,1080",
     ]);
   });
 
-  test("enforces CLI > Kit > Upstream priority and unions enable-features", () => {
+  test("enforces CLI > Profile > Global > Kit > Upstream priority and unions enable-features", () => {
     const args = buildChromiumArgs(
       "/tmp/profiles/a1",
       {
@@ -48,8 +52,8 @@ describe("chromium arg layering and null deletion", () => {
         timezone: "UTC",
         lang: "en-US",
         acceptLang: "en-US,en",
-        platform: "linux",
         windowSize: "1280,800",
+        "--mute-audio": true,
       },
       {
         headed: false,
@@ -58,10 +62,17 @@ describe("chromium arg layering and null deletion", () => {
         args: ["--window-size=1600,900", "--enable-features=CustomFeature"],
       },
       CLEAN_ENV,
+      {
+        proxy: "http://127.0.0.1:8888",
+        timezone: "Asia/Shanghai",
+        "--fingerprint-platform": "linux",
+      },
+      "macos",
     );
     expect(args.filter((arg) => arg.startsWith("--window-size="))).toEqual([
       "--window-size=1600,900",
     ]);
+    expect(args).toContain("--screen-info={1600x900}");
     expect(args.filter((arg) => arg.startsWith("--proxy-server="))).toEqual([
       "--proxy-server=http://127.0.0.1:9999",
     ]);
@@ -73,6 +84,7 @@ describe("chromium arg layering and null deletion", () => {
     expect(args).toContain("--lang=en-US");
     expect(args).toContain("--accept-lang=en-US,en");
     expect(args).toContain("--fingerprint-platform=linux");
+    expect(args).toContain("--mute-audio");
   });
 
   test("deletes lower-layer args when null is explicitly passed instead of falling back", () => {
@@ -80,18 +92,15 @@ describe("chromium arg layering and null deletion", () => {
       "/tmp/profiles/a1",
       {
         fingerprint: 123456,
-        argOverrides: {
-          "--hide-scrollbars": null,
-          "--disable-sync": null,
-        },
+        "--hide-scrollbars": null,
+        "--disable-sync": null,
+        "--screen-info": null,
       },
       {
         headed: false,
         windowSize: null,
         proxy: null,
-        argOverrides: {
-          "--enable-unsafe-swiftshader": null,
-        },
+        "--enable-unsafe-swiftshader": null,
       },
       CLEAN_ENV,
     );
@@ -99,13 +108,14 @@ describe("chromium arg layering and null deletion", () => {
     expect(kitDeleted).not.toContain("--disable-sync");
     expect(kitDeleted).not.toContain("--enable-unsafe-swiftshader");
     expect(kitDeleted.some((arg) => arg.startsWith("--window-size="))).toBe(false);
+    expect(kitDeleted.some((arg) => arg.startsWith("--screen-info="))).toBe(false);
     expect(kitDeleted.some((arg) => arg.startsWith("--proxy-server="))).toBe(false);
 
     const directMerge = mergeChromiumArgs(["--foo=1", "--bar"], { "--foo": null, "--bar": false });
     expect(directMerge).toEqual([]);
   });
 
-  test("respects headed mode and CI sandbox/shm flags", () => {
+  test("respects headed mode without screen-info and CI sandbox/shm flags", () => {
     const headedArgs = buildChromiumArgs(
       "/tmp/profiles/a1",
       { fingerprint: 123456 },
@@ -114,6 +124,7 @@ describe("chromium arg layering and null deletion", () => {
     );
     expect(headedArgs).not.toContain("--headless=new");
     expect(headedArgs).not.toContain("--enable-unsafe-swiftshader");
+    expect(headedArgs.some((arg) => arg.startsWith("--screen-info="))).toBe(false);
     expect(headedArgs).toContain("--window-size=1920,1080");
     expect(headedArgs).toContain("--no-sandbox");
     expect(headedArgs).toContain("--disable-dev-shm-usage");

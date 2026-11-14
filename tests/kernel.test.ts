@@ -2,12 +2,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  compareVersions,
-  readKitConfig,
-  resolveManifestEntry,
-  type KernelDeps,
-} from "@/kernel/manager.ts";
+import { readKitConfig, writeKitConfig } from "@/config/store.ts";
+import { compareVersions, resolveManifestEntry, type KernelDeps } from "@/kernel/manager.ts";
 import { handlePluginRequest } from "@/protocol/router.ts";
 import type { KernelManifest } from "@/protocol/types.ts";
 
@@ -104,8 +100,9 @@ describe("kernel.install and kernel.upgrade", () => {
     expect(compareVersions("150.0.7871.186", "150.0.7871.186")).toBe(0);
   });
 
-  test("kernel.install downloads when missing and skips when already installed", async () => {
+  test("kernel.install downloads when missing and records platform while preserving defaults", async () => {
     const root = makeTempDir();
+    writeKitConfig(root, { defaults: { "--mute-audio": true } });
     const { deps, downloads } = makeFakeKernelDeps([
       {
         tag_name: "152.0.0.1",
@@ -136,6 +133,8 @@ describe("kernel.install and kernel.upgrade", () => {
     expect(downloads).toEqual([
       "https://github.com/adryfish/fingerprint-chromium/releases/download/150.0.7871.186/ungoogled-chromium-150.0.7871.186-1-x86_64_linux.tar.xz",
     ]);
+    expect(readKitConfig(root).kernel?.platform).toBe("linux");
+    expect(readKitConfig(root).defaults).toEqual({ "--mute-audio": true });
 
     const second = await handlePluginRequest(
       { storageRoot: root, kernelDeps: deps },

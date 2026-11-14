@@ -3,7 +3,7 @@
 ## 1. 目标与边界
 
 - **调用极简**：业务侧通过 `agent-browser --session <account>` 指定会话名，经全局配置自动路由至 `kit` 插件完成环境拉起。
-- **持久与临时分离**：通过 `profile.create` 预建的账号持久保存于 `~/.local/share/agent-browser-kit/profiles/<account>`（含 32 位随机 `fingerprint`）；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
+- **持久与临时分离**：通过 `profile.create` 预建的账号配置集中保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 字段（含 32 位随机 `fingerprint`），浏览器持久数据目录位于 `~/.local/share/agent-browser-kit/profiles/<account>`；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
 - **拟人化与接管**：通过 `--input-mode human` 启用人类指针轨迹，并在触发强校验时通过 `Dashboard` 接入人工验证。
 - **进程边界**：单账号对应单个浏览器进程；同账号并发任务通过同一进程内多标签页执行。
 
@@ -85,24 +85,26 @@ sequenceDiagram
    - `kernel.status`：查询当前激活内核版本与路径。
    - `profile.create` / `profile.list` / `profile.delete`：管理账号档案与覆盖配置。
 
-### 3.2 档案存储与指纹生成
+### 3.2 单一配置文件与指纹生成
 
-- **目录约定**：持久数据固定存储在 `~/.local/share/agent-browser-kit/`，不引入环境变量覆盖，遵循单一事实原则。
-  - `config.json`：记录当前激活的内核版本与可执行文件路径。
+- **目录约定**：数据与配置均位于 `~/.local/share/agent-browser-kit/`，单一配置文件为 `config.json`（项目不主动生成全局默认项，由用户按需填写 `defaults`）：
+  - `config.json`：统一存放 `kernel`（含版本、可执行路径与安装时记录的 `platform`）、用户可选全局 `defaults` 以及账号 `profiles`。
   - `kernels/<version>/`：按版本存放已下载的内核文件。
-  - `profiles/<account>/fp.json`：账号指纹与覆盖参数。
-- **元数据（`fp.json`）**：
+  - `profiles/<account>/`：仅存放该账号的 Chromium 运行态与浏览数据目录（无额外 `fp.json`）。
+- **账号元数据**：
   - `fingerprint`：建档时通过密码学安全随机数生成器（CSPRNG）生成的 32 位无符号整数（`1` 至 `4294967295`），持久化后跨重启复用。
-  - 可选覆盖字段：`proxy`、`timezone`、`lang`、`acceptLang`、`platform`、`windowSize`、`argOverrides`。
+  - 可选覆盖字段：`proxy`、`timezone`、`lang`、`acceptLang`、`windowSize` 及任意 `--*` Chromium 开关。
 
-### 3.3 内核拉起与三层参数合并
+### 3.3 内核拉起与五段参数合并
 
-- **内核来源**：`kernel.install` 默认读取项目根目录 `kernel-manifest.json`（构建时内联打包进 `dist/cli.js`）按平台下载，`kernel.upgrade` 直接查询 `adryfish/fingerprint-chromium` GitHub Releases 最新版本（仓库定时动作自动同步该清单）。
-- **三层覆盖合并（`CLI > Kit > 上游 1:1`）**：
+- **内核来源**：`kernel.install` 默认读取项目根目录 `kernel-manifest.json`（构建时内联打包进 `dist/cli.js`）按平台下载并记录 `kernel.platform`（`darwin -> macos`、`linux-x64 -> linux`），`kernel.upgrade` 直接查询 `adryfish/fingerprint-chromium` GitHub Releases 最新版本（仓库定时动作自动同步该清单）。
+- **五段覆盖合并（`CLI > 账号配置 > 全局配置 > Kit 默认 > 上游 1:1`）**：
   1. **上游层（`src/browser/upstream-args.ts`）**：1:1 镜像 `agent-browser` 默认 Chromium 启动参数（含调试端口、防弹窗/后台干扰开关、钥匙串静默、无头模式及容器环境 `--no-sandbox`）。
-  2. **Kit 层（`src/browser/args.ts`）**：注入 `--user-data-dir`、`--fingerprint`、`--fingerprint-brand=Chrome`、默认 `--window-size=1920,1080` 及账号档案参数。
-  3. **CLI 层（`launchOptions`）**：应用命令行透传的 `userAgent`、`proxy`、`windowSize`、`argOverrides` 与 `args`。
-- **显式 `null` 删除语义**：在上层覆盖映射中对任意参数传 `null` 时，直接从最终启动参数列表剔除该开关，不再回退下层默认值。
+  2. **Kit 层（`src/browser/args.ts`）**：注入 `--user-data-dir`、`--fingerprint`、`--fingerprint-brand=Chrome`、`kernel.platform` 对应的 `--fingerprint-platform` 与默认 `--window-size=1920,1080`；无头模式下若上层未显式接管 `--screen-info`，自动由最终生效的 `--window-size` 派生 `--screen-info={宽x高}`。
+  3. **全局配置层（`config.json -> defaults`）**：仅由用户自行填写，覆盖 Kit 默认参数。
+  4. **账号配置层（`config.json -> profiles.<account>`）**：账号维度配置与任意 `--*` 开关，覆盖全局配置。
+  5. **CLI 层（`launchOptions`）**：应用命令行透传的 `userAgent`、`proxy`、`windowSize`、`--*` 及 `args`。
+- **显式 `null` 删除语义**：在上层配置或命令透传中对任意 `--*` 开关传 `null` 时，直接从最终启动参数列表剔除该开关，不再回退下层默认值。
 
 ### 3.4 进程防重入与锁恢复
 
