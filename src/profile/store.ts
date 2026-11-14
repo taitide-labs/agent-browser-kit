@@ -5,8 +5,11 @@ import { assertValidAccount, getProfileDir, getRuntimeStatePath } from "@/config
 import { normalizeBrowserSettings, readKitConfig, writeKitConfig } from "@/config/store.ts";
 import type { ProfileConfig } from "@/protocol/types.ts";
 
+// Upstream 002-user-agent-fingerprint.patch parses --fingerprint with base::StringToInt (signed 32-bit int).
+export const MAX_FINGERPRINT_SEED = 0x7fff_ffff;
+
 export function generateFingerprint(): number {
-  return randomInt(1, 0x1_0000_0000);
+  return randomInt(1, MAX_FINGERPRINT_SEED + 1);
 }
 
 function parseProfileRecord(rawValue: unknown, sourceLabel: string): ProfileConfig {
