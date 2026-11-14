@@ -30,6 +30,14 @@ jobs:
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+      - name: Install dependencies
+        run: mise x -- bun install --frozen-lockfile
       - name: Check upstream releases
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -47,12 +55,12 @@ jobs:
           git config user.email "taitide-release-bot[bot]@users.noreply.github.com"
           git checkout -B "$branch"
           git add kernel-manifest.json
-          git commit -m "chore(kernel): 同步 fingerprint-chromium 上游版本清单"
+          git commit -m "feat(kernel): 同步 fingerprint-chromium 上游版本清单"
           gh auth setup-git
           git push -f origin "$branch"
           existing=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number')
           if [ -z "$existing" ]; then
             gh pr create \
-              --title "chore(kernel): 同步 fingerprint-chromium 上游版本清单" \
+              --title "feat(kernel): 同步 fingerprint-chromium 上游版本清单" \
               --body "自动检测到 adryfish/fingerprint-chromium 新版本，已同步更新平台清单。"
           fi

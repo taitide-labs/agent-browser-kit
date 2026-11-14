@@ -117,9 +117,11 @@ export async function fetchCloudRelease(
   targetVersion?: string,
   fetchFn: typeof fetch = fetch,
 ): Promise<KernelEntry> {
-  const headers = {
+  const token = process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
+  const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "User-Agent": "agent-browser-kit",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
   if (targetVersion) {
     const res = await fetchFn(

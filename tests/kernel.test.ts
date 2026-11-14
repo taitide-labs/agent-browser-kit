@@ -3,7 +3,12 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readKitConfig, writeKitConfig } from "@/config/store.ts";
-import { compareVersions, resolveManifestEntry, type KernelDeps } from "@/kernel/manager.ts";
+import {
+  compareVersions,
+  fetchCloudRelease,
+  resolveManifestEntry,
+  type KernelDeps,
+} from "@/kernel/manager.ts";
 import { handlePluginRequest } from "@/protocol/router.ts";
 import type { KernelManifest } from "@/protocol/types.ts";
 
@@ -234,5 +239,51 @@ describe("kernel.install and kernel.upgrade", () => {
       "https://example.test/151/linux.tar.xz",
     ]);
     expect(readKitConfig(root).kernel?.version).toBe("151.0.8000.10");
+  });
+
+  test("fetchCloudRelease attaches Bearer token from env when present and omits it otherwise", async () => {
+    const prevGhToken = process.env.GH_TOKEN;
+    const prevGithubToken = process.env.GITHUB_TOKEN;
+    const seenAuth: Array<string | undefined> = [];
+    const fakeFetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+      const headers = init?.headers as Record<string, string> | undefined;
+      seenAuth.push(headers?.Authorization);
+      return new Response(
+        JSON.stringify([
+          {
+            tag_name: "150.0.7871.186",
+            assets: [
+              {
+                name: "ungoogled-chromium-150.0.7871.186-1-x86_64_linux.tar.xz",
+                browser_download_url: "https://example.test/150/linux.tar.xz",
+              },
+            ],
+          },
+        ]),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+
+    try {
+      delete process.env.GH_TOKEN;
+      delete process.env.GITHUB_TOKEN;
+      await fetchCloudRelease("adryfish/fingerprint-chromium", "linux-x64", undefined, fakeFetch);
+
+      process.env.GH_TOKEN = "ghs_test_token";
+      await fetchCloudRelease("adryfish/fingerprint-chromium", "linux-x64", undefined, fakeFetch);
+    } finally {
+      if (prevGhToken === undefined) {
+        delete process.env.GH_TOKEN;
+      } else {
+        process.env.GH_TOKEN = prevGhToken;
+      }
+      if (prevGithubToken === undefined) {
+        delete process.env.GITHUB_TOKEN;
+      } else {
+        process.env.GITHUB_TOKEN = prevGithubToken;
+      }
+    }
+
+    expect(seenAuth).toEqual([undefined, "Bearer ghs_test_token"]);
   });
 });
