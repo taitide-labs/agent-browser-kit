@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.1...v0.8.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* **kernel:** 支持从环境变量读取 GitHub Token 并为同步工作流补充依赖缓存 ([#36](https://github.com/taitide-labs/agent-browser-kit/issues/36)) ([40fb69e](https://github.com/taitide-labs/agent-browser-kit/commit/40fb69eaa54fa8033499bded7c4bc20604e67e73))
+
 ## [0.8.1](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.0...v0.8.1) (2026-11-14)
 
 
