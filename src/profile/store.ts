@@ -1,14 +1,14 @@
 import { randomInt } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { isProcessAlive, readRuntimeState, terminateProcess } from "@/browser/lifecycle.ts";
 import {
   assertValidAccount,
   getFingerprintPath,
   getProfileDir,
   getProfilesDir,
   getRuntimeStatePath,
-} from "./paths.ts";
-import { isProcessAlive, readRuntimeState, terminateProcess } from "./process.ts";
-import type { ProfileConfig } from "./types.ts";
+} from "@/config/paths.ts";
+import type { ArgOverrideMap, ProfileConfig } from "@/protocol/types.ts";
 
 const OPTIONAL_STRING_FIELDS = [
   "proxy",
@@ -34,6 +34,23 @@ function normalizeOptionalFields(input: Record<string, unknown>): Partial<Profil
   return result;
 }
 
+function normalizeArgOverrides(
+  existing: ArgOverrideMap | undefined,
+  incoming: unknown,
+): ArgOverrideMap | undefined {
+  const merged: ArgOverrideMap = { ...existing };
+  if (incoming && typeof incoming === "object" && !Array.isArray(incoming)) {
+    for (const [key, value] of Object.entries(incoming as Record<string, unknown>)) {
+      if (value === undefined) {
+        delete merged[key];
+      } else if (value === null || typeof value === "string" || typeof value === "boolean") {
+        merged[key] = value;
+      }
+    }
+  }
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
 export function readProfileConfig(storageRoot: string, account: string): ProfileConfig | null {
   const fpPath = getFingerprintPath(storageRoot, account);
   if (!existsSync(fpPath)) {
@@ -47,9 +64,11 @@ export function readProfileConfig(storageRoot: string, account: string): Profile
   ) {
     throw new Error(`Invalid fingerprint in ${fpPath}.`);
   }
+  const argOverrides = normalizeArgOverrides(undefined, raw.argOverrides);
   return {
     fingerprint: raw.fingerprint,
     ...normalizeOptionalFields(raw),
+    ...(argOverrides ? { argOverrides } : {}),
   };
 }
 
@@ -84,6 +103,15 @@ export function createOrUpdateProfile(
     if (payload[field] === null) {
       delete next[field];
     }
+  }
+  const argOverrides =
+    payload.argOverrides === null
+      ? undefined
+      : normalizeArgOverrides(existing?.argOverrides, payload.argOverrides);
+  if (argOverrides) {
+    next.argOverrides = argOverrides;
+  } else {
+    delete next.argOverrides;
   }
   writeProfileConfig(storageRoot, account, next);
   return { account, ...next };

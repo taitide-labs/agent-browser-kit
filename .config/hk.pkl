@@ -36,12 +36,12 @@ steps {
   }
 
   ["typecheck"] {
-    glob = List("src/**/*.ts", "tsconfig.json")
+    glob = List("src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts", "tsconfig.json")
     check = "bun run typecheck"
   }
 
   ["bun_test"] {
-    glob = List("src/**/*.ts", "package.json")
+    glob = List("src/**/*.ts", "tests/**/*.ts", "package.json")
     check = "bun test"
   }
 }

@@ -6,9 +6,14 @@ export interface KernelEntry {
   url: string;
 }
 
+export interface KernelManifestEntry {
+  version: string;
+  asset: string;
+}
+
 export interface KernelManifest {
   repo: string;
-  platforms: Record<PlatformKey, KernelEntry>;
+  platforms: Record<PlatformKey, KernelManifestEntry>;
 }
 
 export interface ActiveKernel {
@@ -20,6 +25,9 @@ export interface KitConfig {
   kernel?: ActiveKernel;
 }
 
+export type ArgOverrideValue = string | boolean | null | undefined;
+export type ArgOverrideMap = Record<string, ArgOverrideValue>;
+
 export interface ProfileConfig {
   fingerprint: number;
   proxy?: string;
@@ -28,11 +36,13 @@ export interface ProfileConfig {
   acceptLang?: string;
   platform?: string;
   windowSize?: string;
+  argOverrides?: ArgOverrideMap;
 }
 
 export interface RuntimeState {
   pid: number;
   cdpUrl: string;
+  profileDir?: string;
 }
 
 export interface LaunchOptions {
@@ -41,6 +51,8 @@ export interface LaunchOptions {
   colorScheme?: string | null;
   userAgent?: string | null;
   proxy?: string | null;
+  windowSize?: string | null;
+  argOverrides?: ArgOverrideMap | null;
   args?: string[] | null;
 }
 
@@ -66,6 +78,7 @@ export interface PluginResponse {
     metadata: Record<string, unknown>;
     cleanup: {
       sessionId: string;
+      ephemeralDir?: string;
     };
   };
   data?: unknown;

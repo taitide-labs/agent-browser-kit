@@ -1,6 +1,6 @@
-import pkg from "../package.json";
-import { getDefaultStorageRoot } from "./paths.ts";
-import { handlePluginRequest } from "./plugin.ts";
+import pkg from "../../package.json";
+import { getDefaultStorageRoot } from "@/config/paths.ts";
+import { handlePluginRequest } from "@/protocol/router.ts";
 
 function printHelp(): void {
   console.log(

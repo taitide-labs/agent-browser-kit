@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { runCliArgs } from "./cli.ts";
+import { runCliArgs } from "@/cli/index.ts";
 
 test("prints version and help", () => {
   expect(runCliArgs(["--version"])).toBe(0);

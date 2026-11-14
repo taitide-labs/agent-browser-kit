@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { compareVersions, fetchCloudRelease } from "./kernel.ts";
-import type { KernelManifest, PlatformKey } from "./types.ts";
+import { compareVersions, fetchCloudRelease } from "@/kernel/manager.ts";
+import type { KernelManifest, PlatformKey } from "@/protocol/types.ts";
 
-const MANIFEST_PATH = new URL("./kernel-manifest.json", import.meta.url);
+const MANIFEST_PATH = new URL("../kernel-manifest.json", import.meta.url);
 
 export async function syncManifest(
   fetchFn: typeof fetch = fetch,
@@ -18,7 +18,10 @@ export async function syncManifest(
     const prev = current.platforms[platformKey];
     const latest = await fetchCloudRelease(current.repo, platformKey, undefined, fetchFn);
     if (compareVersions(latest.version, prev.version) > 0) {
-      next.platforms[platformKey] = latest;
+      next.platforms[platformKey] = {
+        version: latest.version,
+        asset: latest.assetName.replaceAll(latest.version, "{version}"),
+      };
       changes.push(`${platformKey}: ${prev.version} -> ${latest.version}`);
     }
   }
