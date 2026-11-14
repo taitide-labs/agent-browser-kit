@@ -5,11 +5,24 @@ import { assertValidAccount, getProfileDir, getRuntimeStatePath } from "@/config
 import { normalizeBrowserSettings, readKitConfig, writeKitConfig } from "@/config/store.ts";
 import type { ProfileConfig } from "@/protocol/types.ts";
 
-// Upstream 002-user-agent-fingerprint.patch parses --fingerprint with base::StringToInt (signed 32-bit int).
 export const MAX_FINGERPRINT_SEED = 0x7fff_ffff;
 
 export function generateFingerprint(): number {
   return randomInt(1, MAX_FINGERPRINT_SEED + 1);
+}
+
+function assertValidFingerprintSeed(value: unknown, sourceLabel: string): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > MAX_FINGERPRINT_SEED
+  ) {
+    throw new Error(
+      `Invalid fingerprint for profile "${sourceLabel}": expected an integer between 1 and ${MAX_FINGERPRINT_SEED}.`,
+    );
+  }
+  return value;
 }
 
 function parseProfileRecord(rawValue: unknown, sourceLabel: string): ProfileConfig {
@@ -17,15 +30,8 @@ function parseProfileRecord(rawValue: unknown, sourceLabel: string): ProfileConf
     throw new Error(`Invalid profile entry for "${sourceLabel}".`);
   }
   const raw = rawValue as Record<string, unknown>;
-  if (
-    typeof raw.fingerprint !== "number" ||
-    !Number.isInteger(raw.fingerprint) ||
-    raw.fingerprint < 1
-  ) {
-    throw new Error(`Invalid fingerprint for profile "${sourceLabel}".`);
-  }
   return {
-    fingerprint: raw.fingerprint,
+    fingerprint: assertValidFingerprintSeed(raw.fingerprint, sourceLabel),
     ...normalizeBrowserSettings(raw),
   };
 }
@@ -48,7 +54,12 @@ export function createOrUpdateProfile(
   const existing = kitConfig.profiles?.[account]
     ? parseProfileRecord(kitConfig.profiles[account], account)
     : null;
-  const fingerprint = existing ? existing.fingerprint : generateFingerprint();
+  const fingerprint =
+    payload.seed !== undefined
+      ? assertValidFingerprintSeed(payload.seed, account)
+      : existing
+        ? existing.fingerprint
+        : generateFingerprint();
   const next: ProfileConfig = {
     fingerprint,
     ...normalizeBrowserSettings(

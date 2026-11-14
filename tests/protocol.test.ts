@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getProfileDir } from "@/config/paths.ts";
+import { getConfigPath, getProfileDir } from "@/config/paths.ts";
 import { readKitConfig } from "@/config/store.ts";
 import { generateFingerprint, MAX_FINGERPRINT_SEED } from "@/profile/store.ts";
 import { handlePluginRequest } from "@/protocol/router.ts";
@@ -194,5 +194,65 @@ describe("plugin manifest, help, and profile commands", () => {
       expect(seed).toBeGreaterThanOrEqual(1);
       expect(seed).toBeLessThanOrEqual(2147483647);
     }
+  });
+
+  test("profile.create accepts optional seed and rejects invalid seeds", async () => {
+    const root = makeTempDir();
+
+    const created = await handlePluginRequest(
+      { storageRoot: root },
+      {
+        protocol: "agent-browser.plugin.v1",
+        capability: "command.run",
+        type: "profile.create",
+        request: { account: "seeded-1", seed: 100023 },
+      },
+    );
+    expect(created.success).toBe(true);
+    expect((created.data as { fingerprint: number }).fingerprint).toBe(100023);
+    expect(readKitConfig(root).profiles?.["seeded-1"]?.fingerprint).toBe(100023);
+
+    const updated = await handlePluginRequest(
+      { storageRoot: root },
+      {
+        protocol: "agent-browser.plugin.v1",
+        capability: "command.run",
+        type: "profile.create",
+        request: { account: "seeded-1", seed: MAX_FINGERPRINT_SEED },
+      },
+    );
+    expect(updated.success).toBe(true);
+    expect((updated.data as { fingerprint: number }).fingerprint).toBe(MAX_FINGERPRINT_SEED);
+
+    for (const invalidSeed of [0, -1, 2147483648, 1.5, "100023", null]) {
+      const rejected = await handlePluginRequest(
+        { storageRoot: root },
+        {
+          protocol: "agent-browser.plugin.v1",
+          capability: "command.run",
+          type: "profile.create",
+          request: { account: "seeded-1", seed: invalidSeed },
+        },
+      );
+      expect(rejected.success).toBe(false);
+      expect(rejected.error).toContain("Invalid fingerprint for profile");
+    }
+
+    writeFileSync(
+      getConfigPath(root),
+      JSON.stringify({ profiles: { legacy: { fingerprint: 2147483648 } } }),
+      "utf8",
+    );
+    const listed = await handlePluginRequest(
+      { storageRoot: root },
+      {
+        protocol: "agent-browser.plugin.v1",
+        capability: "command.run",
+        type: "profile.list",
+        request: {},
+      },
+    );
+    expect(listed.success).toBe(false);
+    expect(listed.error).toContain("Invalid fingerprint for profile");
   });
 });

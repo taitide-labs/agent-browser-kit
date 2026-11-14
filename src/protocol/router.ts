@@ -32,6 +32,7 @@ const COMMAND_HELP = {
     description: "Create or update profile & fingerprint",
     payload: {
       account: "string (required)",
+      seed: "integer (1..2147483647)",
       proxy: "string | null",
       timezone: "string | null",
       lang: "string | null",

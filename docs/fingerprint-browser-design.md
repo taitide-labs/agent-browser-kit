@@ -92,7 +92,7 @@ sequenceDiagram
   - `kernels/<version>/`：按版本存放已下载的内核文件。
   - `profiles/<account>/`：仅存放该账号的 Chromium 运行态与浏览数据目录（无额外 `fp.json`）。
 - **账号元数据**：
-  - `fingerprint`：建档时通过密码学安全随机数生成器（CSPRNG）生成的有符号 32 位正整数（`1` 至 `2147483647`，避免上游 `002-user-agent-fingerprint.patch` 使用 `base::StringToInt` 解析时发生 `INT_MAX` 溢出截断），持久化后跨重启复用。
+  - `fingerprint`：有符号 32 位正整数（`1` 至 `2147483647`，避免上游 `002-user-agent-fingerprint.patch` 使用 `base::StringToInt` 解析时发生 `INT_MAX` 溢出截断）；`profile.create` 未传 `seed` 时由密码学安全随机数生成器（CSPRNG）生成，持久化后跨重启复用。
   - 可选覆盖字段：`proxy`、`timezone`、`lang`、`acceptLang`、`windowSize` 及任意 `--*` Chromium 开关。
 
 ### 3.3 内核拉起与五段参数合并
