@@ -4,21 +4,22 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
-  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { getConfigPath, getKernelsDir, getTempDir } from "@/config/paths.ts";
+import { getKernelsDir, getTempDir } from "@/config/paths.ts";
+import { readKitConfig, writeKitConfig } from "@/config/store.ts";
 import type {
   KernelEntry,
   KernelManifest,
   KernelManifestEntry,
-  KitConfig,
   PlatformKey,
 } from "@/protocol/types.ts";
 import manifestJson from "../../kernel-manifest.json" with { type: "json" };
+
+export { readKitConfig, writeKitConfig };
 
 const DEFAULT_MANIFEST = manifestJson as KernelManifest;
 
@@ -88,19 +89,6 @@ export function compareVersions(a: string, b: string): number {
     }
   }
   return 0;
-}
-
-export function readKitConfig(storageRoot: string): KitConfig {
-  const path = getConfigPath(storageRoot);
-  if (!existsSync(path)) {
-    return {};
-  }
-  return JSON.parse(readFileSync(path, "utf8")) as KitConfig;
-}
-
-export function writeKitConfig(storageRoot: string, config: KitConfig): void {
-  mkdirSync(storageRoot, { recursive: true });
-  writeFileSync(getConfigPath(storageRoot), `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
 export function matchReleaseAsset(
@@ -281,6 +269,10 @@ async function extractKernelArchive(
   return executablePath;
 }
 
+function resolveFingerprintPlatform(platformKey: PlatformKey): string {
+  return platformKey === "darwin" ? "macos" : "linux";
+}
+
 async function downloadAndActivateKernel(
   storageRoot: string,
   entry: KernelEntry,
@@ -301,7 +293,11 @@ async function downloadAndActivateKernel(
       runCommand,
     );
     const config = readKitConfig(storageRoot);
-    config.kernel = { version: entry.version, executablePath };
+    config.kernel = {
+      version: entry.version,
+      executablePath,
+      platform: resolveFingerprintPlatform(platformKey),
+    };
     writeKitConfig(storageRoot, config);
     return executablePath;
   } finally {
@@ -313,6 +309,7 @@ export function getKernelStatus(storageRoot: string): {
   installed: boolean;
   version: string | null;
   executablePath: string | null;
+  platform: string | null;
 } {
   const config = readKitConfig(storageRoot);
   const path = config.kernel?.executablePath ?? null;
@@ -321,15 +318,22 @@ export function getKernelStatus(storageRoot: string): {
     installed,
     version: installed ? (config.kernel?.version ?? null) : null,
     executablePath: installed ? path : null,
+    platform: installed ? (config.kernel?.platform ?? null) : null,
   };
 }
 
-export function requireActiveKernelPath(storageRoot: string): string {
+export function requireActiveKernel(storageRoot: string): {
+  executablePath: string;
+  platform?: string;
+} {
   const status = getKernelStatus(storageRoot);
   if (!status.installed || !status.executablePath) {
     throw new Error("Kernel is not installed. Run: agent-browser plugin run kit kernel.install");
   }
-  return status.executablePath;
+  return {
+    executablePath: status.executablePath,
+    ...(status.platform ? { platform: status.platform } : {}),
+  };
 }
 
 export async function installKernel(

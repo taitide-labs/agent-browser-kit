@@ -40,10 +40,6 @@ export function getProfileDir(storageRoot: string, account: string): string {
   return join(getProfilesDir(storageRoot), assertValidAccount(account));
 }
 
-export function getFingerprintPath(storageRoot: string, account: string): string {
-  return join(getProfileDir(storageRoot, account), "fp.json");
-}
-
 export function getRuntimeStatePath(storageRoot: string, account: string): string {
   return join(getProfileDir(storageRoot, account), "runtime.json");
 }

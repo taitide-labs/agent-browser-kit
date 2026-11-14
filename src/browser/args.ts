@@ -1,7 +1,12 @@
-import type { ArgOverrideMap, LaunchOptions, ProfileConfig } from "@/protocol/types.ts";
+import type {
+  ArgOverrideValue,
+  BrowserDefaultsConfig,
+  LaunchOptions,
+  ProfileConfig,
+} from "@/protocol/types.ts";
 import { buildUpstreamChromeArgs, type UpstreamEnv } from "./upstream-args.ts";
 
-export type ChromiumArgLayer = string[] | ArgOverrideMap;
+export type ChromiumArgLayer = string[] | Record<string, ArgOverrideValue>;
 
 const DEFAULT_WINDOW_SIZE = "1920,1080";
 
@@ -118,29 +123,28 @@ export function mergeChromiumArgs(...layers: ChromiumArgLayer[]): string[] {
   return merged;
 }
 
-export function buildKitOverrideMap(
-  profileDir: string,
-  profile: ProfileConfig,
-  kitOverrides?: ArgOverrideMap,
-): ArgOverrideMap {
-  return {
-    "--user-data-dir": profileDir,
-    "--fingerprint": String(profile.fingerprint),
-    "--fingerprint-brand": "Chrome",
-    "--window-size": profile.windowSize ?? DEFAULT_WINDOW_SIZE,
-    ...(profile.proxy !== undefined ? { "--proxy-server": profile.proxy } : {}),
-    ...(profile.timezone !== undefined ? { "--timezone": profile.timezone } : {}),
-    ...(profile.lang !== undefined ? { "--lang": profile.lang } : {}),
-    ...(profile.acceptLang !== undefined ? { "--accept-lang": profile.acceptLang } : {}),
-    ...(profile.platform !== undefined ? { "--fingerprint-platform": profile.platform } : {}),
-    ...profile.argOverrides,
-    ...kitOverrides,
+function settingsToArgLayer(settings?: BrowserDefaultsConfig): Record<string, ArgOverrideValue> {
+  if (!settings) {
+    return {};
+  }
+  const layer: Record<string, ArgOverrideValue> = {
+    ...(settings.proxy !== undefined ? { "--proxy-server": settings.proxy } : {}),
+    ...(settings.timezone !== undefined ? { "--timezone": settings.timezone } : {}),
+    ...(settings.lang !== undefined ? { "--lang": settings.lang } : {}),
+    ...(settings.acceptLang !== undefined ? { "--accept-lang": settings.acceptLang } : {}),
+    ...(settings.windowSize !== undefined ? { "--window-size": settings.windowSize } : {}),
   };
+  for (const [key, value] of Object.entries(settings)) {
+    if (key.startsWith("--") && value !== undefined) {
+      layer[key] = value as ArgOverrideValue;
+    }
+  }
+  return layer;
 }
 
-export function buildCliOverrideLayers(launchOptions: LaunchOptions): ChromiumArgLayer[] {
+function buildCliOverrideLayers(launchOptions: LaunchOptions): ChromiumArgLayer[] {
   const layers: ChromiumArgLayer[] = [];
-  const optionMap: ArgOverrideMap = {};
+  const optionMap: Record<string, ArgOverrideValue> = {};
 
   if (launchOptions.userAgent !== undefined) {
     optionMap["--user-agent"] = launchOptions.userAgent;
@@ -151,11 +155,13 @@ export function buildCliOverrideLayers(launchOptions: LaunchOptions): ChromiumAr
   if (launchOptions.windowSize !== undefined) {
     optionMap["--window-size"] = launchOptions.windowSize;
   }
+  for (const [key, value] of Object.entries(launchOptions)) {
+    if (key.startsWith("--") && value !== undefined) {
+      optionMap[key] = value as ArgOverrideValue;
+    }
+  }
   if (Object.keys(optionMap).length > 0) {
     layers.push(optionMap);
-  }
-  if (launchOptions.argOverrides) {
-    layers.push(launchOptions.argOverrides);
   }
   if (Array.isArray(launchOptions.args)) {
     const rawArgs = launchOptions.args
@@ -170,20 +176,54 @@ export function buildCliOverrideLayers(launchOptions: LaunchOptions): ChromiumAr
   return layers;
 }
 
+function hasExplicitFlag(layers: ChromiumArgLayer[], targetKey: string): boolean {
+  for (const layer of layers) {
+    if (Array.isArray(layer)) {
+      if (layer.some((flag) => getArgKey(flag.trim()) === targetKey)) {
+        return true;
+      }
+      continue;
+    }
+    for (const [rawKey, value] of Object.entries(layer)) {
+      if (value !== undefined && normalizeFlagKey(rawKey.trim()) === targetKey) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function buildChromiumArgs(
   profileDir: string,
   profile: ProfileConfig,
   launchOptions: LaunchOptions,
   upstreamEnv?: UpstreamEnv,
-  kitOverrides?: ArgOverrideMap,
+  globalDefaults?: BrowserDefaultsConfig,
+  kernelPlatform?: string,
+  kitOverrides?: Record<string, ArgOverrideValue>,
 ): string[] {
-  const upstreamArgs = buildUpstreamChromeArgs(
-    {
-      headless: !launchOptions.headed,
-    },
-    upstreamEnv,
-  );
-  const kitMap = buildKitOverrideMap(profileDir, profile, kitOverrides);
+  const upstreamArgs = buildUpstreamChromeArgs({ headless: !launchOptions.headed }, upstreamEnv);
+  const kitLayer: Record<string, ArgOverrideValue> = {
+    "--user-data-dir": profileDir,
+    "--fingerprint": String(profile.fingerprint),
+    "--fingerprint-brand": "Chrome",
+    "--window-size": DEFAULT_WINDOW_SIZE,
+    ...(kernelPlatform ? { "--fingerprint-platform": kernelPlatform } : {}),
+    ...kitOverrides,
+  };
+  const globalLayer = settingsToArgLayer(globalDefaults);
+  const profileLayer = settingsToArgLayer(profile);
   const cliLayers = buildCliOverrideLayers(launchOptions);
-  return mergeChromiumArgs(upstreamArgs, kitMap, ...cliLayers);
+  const upperLayers: ChromiumArgLayer[] = [globalLayer, profileLayer, ...cliLayers];
+  const merged = mergeChromiumArgs(upstreamArgs, kitLayer, ...upperLayers);
+
+  if (!launchOptions.headed && !hasExplicitFlag(upperLayers, "--screen-info")) {
+    const windowSizeArg = merged.find((arg) => /^--window-size=(\d+),(\d+)$/.test(arg));
+    const match = windowSizeArg?.match(/^--window-size=(\d+),(\d+)$/);
+    if (match) {
+      merged.push(`--screen-info={${match[1]}x${match[2]}}`);
+    }
+  }
+
+  return merged;
 }
