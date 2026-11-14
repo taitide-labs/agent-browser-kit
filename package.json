@@ -1,7 +1,7 @@
 {
   "name": "@taitide/agent-browser-kit",
   "version": "0.4.0",
-  "description": "Extended CLI shim for agent-browser with custom Chrome kernel and profile management.",
+  "description": "agent-browser plugin for fingerprint-chromium multi-account isolation and kernel management.",
   "license": "MIT",
   "repository": {
     "type": "git",
