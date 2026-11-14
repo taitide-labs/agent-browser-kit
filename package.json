@@ -1,6 +1,6 @@
 {
   "name": "@taitide/agent-browser-kit",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "agent-browser plugin for fingerprint-chromium multi-account isolation and kernel management.",
   "license": "MIT",
   "repository": {
