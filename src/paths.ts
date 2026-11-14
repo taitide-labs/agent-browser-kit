@@ -1,10 +1,22 @@
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 const ACCOUNT_PATTERN = /^[\p{L}\p{N}_-]+$/u;
 
 export function getDefaultStorageRoot(): string {
   return join(homedir(), ".local", "share", "agent-browser-kit");
+}
+
+export function getDefaultEphemeralRoot(): string {
+  return join(tmpdir(), "agent-browser-kit", "sessions");
+}
+
+export function getEphemeralSessionDir(ephemeralRoot: string, account: string): string {
+  return join(ephemeralRoot, assertValidAccount(account));
+}
+
+export function getEphemeralRuntimeStatePath(ephemeralRoot: string, account: string): string {
+  return join(getEphemeralSessionDir(ephemeralRoot, account), "runtime.json");
 }
 
 export function getConfigPath(storageRoot: string): string {

@@ -67,16 +67,6 @@ export function writeProfileConfig(
   );
 }
 
-export function ensureProfile(storageRoot: string, account: string): ProfileConfig {
-  const existing = readProfileConfig(storageRoot, account);
-  if (existing) {
-    return existing;
-  }
-  const created: ProfileConfig = { fingerprint: generateFingerprint() };
-  writeProfileConfig(storageRoot, account, created);
-  return created;
-}
-
 export function createOrUpdateProfile(
   storageRoot: string,
   payload: Record<string, unknown>,

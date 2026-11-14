@@ -13,9 +13,10 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { compareVersions, readKitConfig, writeKitConfig, type KernelDeps } from "./kernel.ts";
-import { getProfileDir } from "./paths.ts";
+import { getEphemeralSessionDir, getProfileDir } from "./paths.ts";
 import { handlePluginRequest } from "./plugin.ts";
 import { buildChromiumArgs, isProcessAlive } from "./process.ts";
+import { createOrUpdateProfile } from "./profile.ts";
 import type { KernelManifest } from "./types.ts";
 
 const tempDirs: string[] = [];
@@ -337,8 +338,43 @@ describe("profile management and browser lifecycle", () => {
     expect(existsSync(getProfileDir(root, "acct-1"))).toBe(false);
   });
 
-  test("builds expected Chromium args from profile and launch options", () => {
-    const args = buildChromiumArgs(
+  test("builds layered Chromium args with CLI > Kit > Upstream priority and 1080p default", () => {
+    const cleanEnv = {
+      platform: "darwin" as const,
+      ci: false,
+      isRoot: false,
+      inContainer: false,
+      devShmAvailableBytes: null,
+    };
+
+    const defaultArgs = buildChromiumArgs(
+      "/tmp/profiles/a1",
+      { fingerprint: 123456 },
+      { headed: false },
+      cleanEnv,
+    );
+    expect(defaultArgs).toContain("--user-data-dir=/tmp/profiles/a1");
+    expect(defaultArgs).toContain("--remote-debugging-port=0");
+    expect(defaultArgs).toContain("--no-first-run");
+    expect(defaultArgs).toContain("--no-default-browser-check");
+    expect(defaultArgs).toContain("--disable-background-networking");
+    expect(defaultArgs).toContain("--disable-component-update");
+    expect(defaultArgs).toContain("--disable-sync");
+    expect(defaultArgs).toContain(
+      "--enable-features=NetworkService,NetworkServiceInProcess,WebMCPTesting,DevToolsWebMCPSupport",
+    );
+    expect(defaultArgs).toContain("--password-store=basic");
+    expect(defaultArgs).toContain("--use-mock-keychain");
+    expect(defaultArgs).toContain("--headless=new");
+    expect(defaultArgs).toContain("--hide-scrollbars");
+    expect(defaultArgs).toContain("--enable-unsafe-swiftshader");
+    expect(defaultArgs).toContain("--fingerprint=123456");
+    expect(defaultArgs).toContain("--fingerprint-brand=Chrome");
+    expect(defaultArgs.filter((arg) => arg.startsWith("--window-size="))).toEqual([
+      "--window-size=1920,1080",
+    ]);
+
+    const overriddenArgs = buildChromiumArgs(
       "/tmp/profiles/a1",
       {
         fingerprint: 123456,
@@ -349,24 +385,45 @@ describe("profile management and browser lifecycle", () => {
         platform: "linux",
         windowSize: "1280,800",
       },
-      { headed: false, userAgent: "CustomUA" },
+      {
+        headed: false,
+        userAgent: "CustomUA",
+        proxy: "http://127.0.0.1:9999",
+        args: ["--window-size=1600,900", "--enable-features=CustomFeature"],
+      },
+      cleanEnv,
     );
-    expect(args).toContain("--user-data-dir=/tmp/profiles/a1");
-    expect(args).toContain("--remote-debugging-port=0");
-    expect(args).toContain("--fingerprint=123456");
-    expect(args).toContain("--fingerprint-brand=Chrome");
-    expect(args).toContain("--headless=new");
-    expect(args).toContain("--user-agent=CustomUA");
-    expect(args).toContain("--proxy-server=socks5://127.0.0.1:1080");
-    expect(args).toContain("--timezone=UTC");
-    expect(args).toContain("--lang=en-US");
-    expect(args).toContain("--accept-lang=en-US,en");
-    expect(args).toContain("--fingerprint-platform=linux");
-    expect(args).toContain("--window-size=1280,800");
+    expect(overriddenArgs.filter((arg) => arg.startsWith("--window-size="))).toEqual([
+      "--window-size=1600,900",
+    ]);
+    expect(overriddenArgs.filter((arg) => arg.startsWith("--proxy-server="))).toEqual([
+      "--proxy-server=http://127.0.0.1:9999",
+    ]);
+    expect(overriddenArgs).toContain(
+      "--enable-features=NetworkService,NetworkServiceInProcess,WebMCPTesting,DevToolsWebMCPSupport,CustomFeature",
+    );
+    expect(overriddenArgs).toContain("--user-agent=CustomUA");
+    expect(overriddenArgs).toContain("--timezone=UTC");
+    expect(overriddenArgs).toContain("--lang=en-US");
+    expect(overriddenArgs).toContain("--accept-lang=en-US,en");
+    expect(overriddenArgs).toContain("--fingerprint-platform=linux");
+
+    const headedArgs = buildChromiumArgs(
+      "/tmp/profiles/a1",
+      { fingerprint: 123456 },
+      { headed: true },
+      { ...cleanEnv, ci: true },
+    );
+    expect(headedArgs).not.toContain("--headless=new");
+    expect(headedArgs).not.toContain("--enable-unsafe-swiftshader");
+    expect(headedArgs).toContain("--window-size=1920,1080");
+    expect(headedArgs).toContain("--no-sandbox");
+    expect(headedArgs).toContain("--disable-dev-shm-usage");
   });
 
   test("launches, reuses, cleans stale locks, and closes mock browser process", async () => {
     const root = makeTempDir();
+    const ephemeralRoot = join(root, "ephemeral");
     const server = createServer();
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
     const address = server.address();
@@ -392,12 +449,12 @@ sleep 30
       chmodSync(fakeBrowser, 0o755);
       writeKitConfig(root, { kernel: { version: "148.0.7778.215", executablePath: fakeBrowser } });
 
+      createOrUpdateProfile(root, { account: "verify-01" });
       const profileDir = getProfileDir(root, "verify-01");
-      mkdirSync(profileDir, { recursive: true });
       symlinkSync("localhost-9999999", join(profileDir, "SingletonLock"));
 
       const launch1 = await handlePluginRequest(
-        { storageRoot: root },
+        { storageRoot: root, ephemeralRoot },
         {
           protocol: "agent-browser.plugin.v1",
           type: "browser.launch",
@@ -420,7 +477,7 @@ sleep 30
       expect(argsLog).not.toContain("--headless=new");
 
       const launch2 = await handlePluginRequest(
-        { storageRoot: root },
+        { storageRoot: root, ephemeralRoot },
         {
           protocol: "agent-browser.plugin.v1",
           type: "browser.launch",
@@ -432,7 +489,7 @@ sleep 30
       expect(launch2.browser?.metadata.pid).toBe(spawnedPid);
 
       const closed = await handlePluginRequest(
-        { storageRoot: root },
+        { storageRoot: root, ephemeralRoot },
         {
           protocol: "agent-browser.plugin.v1",
           type: "browser.close",
@@ -442,6 +499,39 @@ sleep 30
       );
       expect(closed.success).toBe(true);
       expect(isProcessAlive(spawnedPid)).toBe(false);
+      expect(existsSync(profileDir)).toBe(true);
+
+      const ephemeralLaunch = await handlePluginRequest(
+        { storageRoot: root, ephemeralRoot },
+        {
+          protocol: "agent-browser.plugin.v1",
+          type: "browser.launch",
+          capability: "browser.provider",
+          request: {
+            provider: "kit",
+            session: "temp-session",
+            launchOptions: { headed: false },
+          },
+        },
+      );
+      expect(ephemeralLaunch.success).toBe(true);
+      expect(existsSync(getProfileDir(root, "temp-session"))).toBe(false);
+      const tempSessionDir = getEphemeralSessionDir(ephemeralRoot, "temp-session");
+      expect(existsSync(tempSessionDir)).toBe(true);
+
+      const tempPid = Number(ephemeralLaunch.browser?.metadata.pid);
+      const ephemeralClose = await handlePluginRequest(
+        { storageRoot: root, ephemeralRoot },
+        {
+          protocol: "agent-browser.plugin.v1",
+          type: "browser.close",
+          capability: "browser.provider",
+          request: { sessionId: "temp-session" },
+        },
+      );
+      expect(ephemeralClose.success).toBe(true);
+      expect(isProcessAlive(tempPid)).toBe(false);
+      expect(existsSync(tempSessionDir)).toBe(false);
     } finally {
       server.close();
     }

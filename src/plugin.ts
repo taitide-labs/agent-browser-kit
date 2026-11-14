@@ -1,5 +1,13 @@
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import pkg from "../package.json";
-import { getProfileDir, getRuntimeStatePath, assertValidAccount } from "./paths.ts";
+import {
+  assertValidAccount,
+  getDefaultEphemeralRoot,
+  getEphemeralRuntimeStatePath,
+  getEphemeralSessionDir,
+  getProfileDir,
+  getRuntimeStatePath,
+} from "./paths.ts";
 import {
   buildChromiumArgs,
   cleanupStaleLocks,
@@ -10,7 +18,13 @@ import {
   terminateProcess,
   writeRuntimeState,
 } from "./process.ts";
-import { createOrUpdateProfile, deleteProfile, ensureProfile, listProfiles } from "./profile.ts";
+import {
+  createOrUpdateProfile,
+  deleteProfile,
+  generateFingerprint,
+  listProfiles,
+  readProfileConfig,
+} from "./profile.ts";
 import {
   getKernelStatus,
   installKernel,
@@ -103,6 +117,7 @@ function getHelpData(payload: Record<string, unknown>): Record<string, unknown> 
 
 export interface PluginContext {
   storageRoot: string;
+  ephemeralRoot?: string;
   kernelDeps?: KernelDeps;
 }
 
@@ -134,16 +149,32 @@ async function handleBrowserLaunch(
 ): Promise<PluginResponse> {
   const session = assertValidAccount(String(request.session ?? ""));
   const executablePath = requireActiveKernelPath(ctx.storageRoot);
-  const runtimePath = getRuntimeStatePath(ctx.storageRoot, session);
+  const ephemeralRoot = ctx.ephemeralRoot ?? getDefaultEphemeralRoot();
+  const savedProfile = readProfileConfig(ctx.storageRoot, session);
+  const ephemeral = savedProfile === null;
+  const profileDir = ephemeral
+    ? getEphemeralSessionDir(ephemeralRoot, session)
+    : getProfileDir(ctx.storageRoot, session);
+  const runtimePath = ephemeral
+    ? getEphemeralRuntimeStatePath(ephemeralRoot, session)
+    : getRuntimeStatePath(ctx.storageRoot, session);
+
   const existing = readRuntimeState(runtimePath);
   if (existing && isProcessAlive(existing.pid) && (await isCdpUrlReachable(existing.cdpUrl))) {
     return launchSuccess(session, existing.cdpUrl, existing.pid);
   }
 
-  const profileDir = getProfileDir(ctx.storageRoot, session);
-  const profile = ensureProfile(ctx.storageRoot, session);
-  cleanupStaleLocks(profileDir, runtimePath);
+  if (ephemeral) {
+    if (existsSync(profileDir)) {
+      cleanupStaleLocks(profileDir, runtimePath);
+      rmSync(profileDir, { recursive: true, force: true });
+    }
+    mkdirSync(profileDir, { recursive: true });
+  } else {
+    cleanupStaleLocks(profileDir, runtimePath);
+  }
 
+  const profile = savedProfile ?? { fingerprint: generateFingerprint() };
   const launchOptions = (request.launchOptions ?? {}) as LaunchOptions;
   const args = buildChromiumArgs(profileDir, profile, launchOptions);
   const runtime = await launchChromiumProcess(executablePath, profileDir, args);
@@ -156,13 +187,28 @@ async function handleBrowserClose(
   request: Record<string, unknown>,
 ): Promise<PluginResponse> {
   const session = assertValidAccount(String(request.sessionId ?? request.session ?? ""));
-  const runtimePath = getRuntimeStatePath(ctx.storageRoot, session);
-  const profileDir = getProfileDir(ctx.storageRoot, session);
-  const runtime = readRuntimeState(runtimePath);
-  if (runtime && isProcessAlive(runtime.pid)) {
-    await terminateProcess(runtime.pid);
+  const ephemeralRoot = ctx.ephemeralRoot ?? getDefaultEphemeralRoot();
+
+  const persistentDir = getProfileDir(ctx.storageRoot, session);
+  const persistentRuntimePath = getRuntimeStatePath(ctx.storageRoot, session);
+  const persistentRuntime = readRuntimeState(persistentRuntimePath);
+  if (persistentRuntime && isProcessAlive(persistentRuntime.pid)) {
+    await terminateProcess(persistentRuntime.pid);
   }
-  cleanupStaleLocks(profileDir, runtimePath);
+  if (existsSync(persistentDir)) {
+    cleanupStaleLocks(persistentDir, persistentRuntimePath);
+  }
+
+  const ephemeralDir = getEphemeralSessionDir(ephemeralRoot, session);
+  const ephemeralRuntimePath = getEphemeralRuntimeStatePath(ephemeralRoot, session);
+  const ephemeralRuntime = readRuntimeState(ephemeralRuntimePath);
+  if (ephemeralRuntime && isProcessAlive(ephemeralRuntime.pid)) {
+    await terminateProcess(ephemeralRuntime.pid);
+  }
+  if (existsSync(ephemeralDir)) {
+    rmSync(ephemeralDir, { recursive: true, force: true });
+  }
+
   return {
     protocol: PROTOCOL,
     success: true,

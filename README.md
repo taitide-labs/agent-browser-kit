@@ -38,9 +38,10 @@
 agent-browser plugin run kit help
 ```
 
-### 多账号浏览（懒初始化）
+### 多账号浏览与临时会话
 
-直接传入 `--session <account>` 即可使用；首次访问未建档账号时，插件会自动生成 `~/.local/share/agent-browser-kit/profiles/<account>/fp.json` 并持久复用同一身份：
+- **临时会话**：未提前创建档案直接传入 `--session <name>` 时，浏览器数据放在系统临时目录并随机生成本次 `--fingerprint`，`close` 后自动删除临时目录。
+- **持久账号**：先通过 `profile.create` 创建档案后再用 `--session <account>` 启动，Cookies、登录态与 `~/.local/share/agent-browser-kit/profiles/<account>/fp.json` 会长期保留；未指定 `windowSize` 时默认使用 `1920,1080`。
 
 ```sh
 agent-browser --session account-01 --input-mode human --headed open "https://example.com"

@@ -40,6 +40,8 @@ export interface LaunchOptions {
   headed?: boolean | null;
   colorScheme?: string | null;
   userAgent?: string | null;
+  proxy?: string | null;
+  args?: string[] | null;
 }
 
 export interface PluginRequest {
