@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.2...v0.8.3) (2026-11-14)
+
+
+### Bug Fixes
+
+* **browser:** 消除有头模式启动时的多余新标签页 ([#41](https://github.com/taitide-labs/agent-browser-kit/issues/41)) ([e90a995](https://github.com/taitide-labs/agent-browser-kit/commit/e90a9952625a90ef4e8e90d62b9df4e304e740b5))
+
 ## [0.8.2](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.1...v0.8.2) (2026-11-14)
 
 
