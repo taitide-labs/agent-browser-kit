@@ -1,6 +1,6 @@
 # agent-browser-kit
 
-基于 `adryfish/fingerprint-chromium` 的 `agent-browser` 多账号指纹隔离与内核管理插件。
+基于 [adryfish/fingerprint-chromium](https://github.com/adryfish/fingerprint-chromium) 的 [agent-browser](https://github.com/vercel-labs/agent-browser) 多账号指纹隔离与内核管理插件。
 
 ## Background
 
@@ -10,7 +10,7 @@
 
 前置条件：本机已安装 [Bun](https://bun.sh/) 与 [agent-browser](https://github.com/vercel-labs/agent-browser)。
 
-1. 在 `~/.agent-browser/config.json` 中注册 `kit` 插件并设为默认提供方（通过 `bunx` 拉起）：
+1. 在 `~/.agent-browser/config.json` 中注册 `kit` 插件并设为默认提供方：
 
    ```json
    {
