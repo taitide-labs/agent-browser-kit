@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.4](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.3...v0.8.4) (2026-11-14)
+
+
+### Bug Fixes
+
+* **profile:** 限制指纹 seed 为有符号 32 位正整数 ([#50](https://github.com/taitide-labs/agent-browser-kit/issues/50)) ([d9efc29](https://github.com/taitide-labs/agent-browser-kit/commit/d9efc29527aea3b286eaa469f3a9e5d2692ed999))
+
 ## [0.8.3](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.2...v0.8.3) (2026-11-14)
 
 
