@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.6.0...v0.7.0) (2026-11-14)
+
+
+### Features
+
+* **browser:** 支持参数 null 显式删除、mkdtempSync 临时会话及分层架构 ([#30](https://github.com/taitide-labs/agent-browser-kit/issues/30)) ([8e3cdff](https://github.com/taitide-labs/agent-browser-kit/commit/8e3cdff72d578e46521062aabf09b940b61c6a03))
+
 ## [0.6.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.5.1...v0.6.0) (2026-11-14)
 
 
