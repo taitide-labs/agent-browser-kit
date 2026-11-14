@@ -446,4 +446,56 @@ sleep 30
       server.close();
     }
   });
+
+  test("returns structured command help for all commands or a single command", async () => {
+    const root = makeTempDir();
+    const allHelp = await handlePluginRequest(
+      { storageRoot: root },
+      {
+        protocol: "agent-browser.plugin.v1",
+        type: "help",
+        capability: "command.run",
+        request: {},
+      },
+    );
+    expect(allHelp.success).toBe(true);
+    const data = allHelp.data as {
+      plugin: string;
+      commands: Record<string, { description: string }>;
+    };
+    expect(data.plugin).toBe("kit");
+    expect(Object.keys(data.commands)).toEqual([
+      "help",
+      "profile.create",
+      "profile.list",
+      "profile.delete",
+      "kernel.install",
+      "kernel.upgrade",
+      "kernel.status",
+    ]);
+
+    const singleHelp = await handlePluginRequest(
+      { storageRoot: root },
+      {
+        protocol: "agent-browser.plugin.v1",
+        type: "command.run",
+        capability: "command.run",
+        request: { command: "help", payload: { command: "profile.create" } },
+      },
+    );
+    expect(singleHelp.success).toBe(true);
+    expect((singleHelp.data as { command: string }).command).toBe("profile.create");
+
+    const invalidHelp = await handlePluginRequest(
+      { storageRoot: root },
+      {
+        protocol: "agent-browser.plugin.v1",
+        type: "help",
+        capability: "command.run",
+        request: { command: "unknown.cmd" },
+      },
+    );
+    expect(invalidHelp.success).toBe(false);
+    expect(invalidHelp.error).toContain("Unsupported plugin command");
+  });
 });
