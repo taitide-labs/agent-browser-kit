@@ -20,6 +20,7 @@ describe("chromium arg layering and null deletion", () => {
       "macos",
     );
     expect(args).toContain("--user-data-dir=/tmp/profiles/a1");
+    expect(args).toContain("--no-startup-window");
     expect(args).toContain("--remote-debugging-port=0");
     expect(args).toContain("--no-first-run");
     expect(args).toContain("--no-default-browser-check");
@@ -94,6 +95,7 @@ describe("chromium arg layering and null deletion", () => {
         fingerprint: 123456,
         "--hide-scrollbars": null,
         "--disable-sync": null,
+        "--no-startup-window": null,
         "--screen-info": null,
       },
       {
@@ -106,6 +108,7 @@ describe("chromium arg layering and null deletion", () => {
     );
     expect(kitDeleted).not.toContain("--hide-scrollbars");
     expect(kitDeleted).not.toContain("--disable-sync");
+    expect(kitDeleted).not.toContain("--no-startup-window");
     expect(kitDeleted).not.toContain("--enable-unsafe-swiftshader");
     expect(kitDeleted.some((arg) => arg.startsWith("--window-size="))).toBe(false);
     expect(kitDeleted.some((arg) => arg.startsWith("--screen-info="))).toBe(false);
