@@ -72,6 +72,7 @@ jobs:
       - name: Upload release assets and publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           gh release upload "$TAG" artifacts/* --clobber
