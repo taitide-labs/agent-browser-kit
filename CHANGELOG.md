@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.11.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.10.0...v0.11.0) (2026-11-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **profile:** 账号指纹移至 profiles/<account>/account.fp，不再存放在 config.json。
+
+### Bug Fixes
+
+* **profile:** 将 fingerprint 移至 account.fp ([#57](https://github.com/taitide-labs/agent-browser-kit/issues/57)) ([a42645e](https://github.com/taitide-labs/agent-browser-kit/commit/a42645e39e2ee696a509e1ae0c16db173714ca14))
+
 ## [0.10.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.9.0...v0.10.0) (2026-11-15)
 
 
