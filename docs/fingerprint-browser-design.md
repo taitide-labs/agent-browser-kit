@@ -83,7 +83,7 @@ sequenceDiagram
    - `kernel.install`：若已安装有效内核则直接跳过；未安装时按内置清单下载并激活。
    - `kernel.upgrade`：未安装时下载安装；已安装且云端存在更高版本时下载升级并替换激活路径。
    - `kernel.status`：查询当前激活内核版本与路径。
-   - `profile.create` / `profile.list` / `profile.delete`：管理账号档案与覆盖配置。
+   - `profile.create` / `profile.list` / `profile.delete`：创建、查询与删除账号档案，重复创建已存在账号时直接报错。
 
 ### 3.2 单一配置文件与指纹生成
 
@@ -92,7 +92,7 @@ sequenceDiagram
   - `kernels/<version>/`：按版本存放已下载的内核文件。
   - `profiles/<account>/`：仅存放该账号的 Chromium 运行态与浏览数据目录（无额外 `fp.json`）。
 - **账号元数据**：
-  - `fingerprint`：有符号 32 位正整数（`1` 至 `2147483647`，避免上游 `002-user-agent-fingerprint.patch` 使用 `base::StringToInt` 解析时发生 `INT_MAX` 溢出截断）；`profile.create` 未传 `seed` 时由密码学安全随机数生成器（CSPRNG）生成，持久化后跨重启复用。
+  - `fingerprint`：有符号 32 位正整数（`1` 至 `2147483647`，避免上游 `002-user-agent-fingerprint.patch` 使用 `base::StringToInt` 解析时发生 `INT_MAX` 溢出截断）；`profile.create` 未传 `fingerprint` 时由密码学安全随机数生成器（CSPRNG）生成，持久化后跨重启复用。
   - 可选覆盖字段：`proxy`、`timezone`、`lang`、`acceptLang`、`windowSize` 及任意 `--*` Chromium 开关。
 
 ### 3.3 内核拉起与五段参数合并

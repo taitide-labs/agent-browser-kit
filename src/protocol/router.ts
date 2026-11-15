@@ -15,7 +15,7 @@ import {
   upgradeKernel,
   type KernelDeps,
 } from "@/kernel/manager.ts";
-import { createOrUpdateProfile, deleteProfile, listProfiles } from "@/profile/store.ts";
+import { createProfile, deleteProfile, listProfiles } from "@/profile/store.ts";
 import type { LaunchOptions, PluginRequest, PluginResponse } from "./types.ts";
 
 const PROTOCOL = "agent-browser.plugin.v1" as const;
@@ -29,10 +29,10 @@ const COMMAND_HELP = {
     },
   },
   "profile.create": {
-    description: "Create or update profile & fingerprint",
+    description: "Create profile & fingerprint",
     payload: {
       account: "string (required)",
-      seed: "integer (1..2147483647)",
+      fingerprint: "integer (1..2147483647)",
       proxy: "string | null",
       timezone: "string | null",
       lang: "string | null",
@@ -192,7 +192,7 @@ async function handleCommand(
       return {
         protocol: PROTOCOL,
         success: true,
-        data: createOrUpdateProfile(ctx.storageRoot, payload),
+        data: createProfile(ctx.storageRoot, payload),
       };
     case "profile.list":
       return {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getConfigPath, getProfileDir } from "@/config/paths.ts";
@@ -53,7 +53,7 @@ describe("plugin manifest, help, and profile commands", () => {
     expect(invalid.error).toContain("Invalid account/session name");
   });
 
-  test("creates, lists, updates, and deletes profiles", async () => {
+  test("creates, lists, and deletes profiles while rejecting duplicate creation", async () => {
     const root = makeTempDir();
     const created = await handlePluginRequest(
       { storageRoot: root },
@@ -85,20 +85,32 @@ describe("plugin manifest, help, and profile commands", () => {
     expect(data["--disable-sync"]).toBeNull();
     expect(readKitConfig(root).profiles?.["acct-1"]?.fingerprint).toBe(data.fingerprint);
 
-    const updated = await handlePluginRequest(
+    const duplicate = await handlePluginRequest(
       { storageRoot: root },
       {
         protocol: "agent-browser.plugin.v1",
         capability: "command.run",
         type: "profile.create",
-        request: { account: "acct-1", proxy: null },
+        request: { account: "acct-1", fingerprint: 100023, proxy: null },
       },
     );
-    expect((updated.data as { fingerprint: number; proxy?: string }).fingerprint).toBe(
-      data.fingerprint,
+    expect(duplicate.success).toBe(false);
+    expect(duplicate.error).toBe('Profile "acct-1" already exists.');
+    expect(readKitConfig(root).profiles?.["acct-1"]?.fingerprint).toBe(data.fingerprint);
+    expect(readKitConfig(root).profiles?.["acct-1"]?.proxy).toBe("http://127.0.0.1:7890");
+
+    mkdirSync(getProfileDir(root, "orphan-1"), { recursive: true });
+    const orphanDuplicate = await handlePluginRequest(
+      { storageRoot: root },
+      {
+        protocol: "agent-browser.plugin.v1",
+        capability: "command.run",
+        type: "profile.create",
+        request: { account: "orphan-1" },
+      },
     );
-    expect((updated.data as { proxy?: string }).proxy).toBeUndefined();
-    expect((updated.data as Record<string, unknown>)["--disable-sync"]).toBeNull();
+    expect(orphanDuplicate.success).toBe(false);
+    expect(orphanDuplicate.error).toBe('Profile "orphan-1" already exists.');
 
     const listed = await handlePluginRequest(
       { storageRoot: root },
@@ -196,7 +208,7 @@ describe("plugin manifest, help, and profile commands", () => {
     }
   });
 
-  test("profile.create accepts optional seed and rejects invalid seeds", async () => {
+  test("profile.create accepts optional fingerprint and rejects invalid values", async () => {
     const root = makeTempDir();
 
     const created = await handlePluginRequest(
@@ -205,33 +217,33 @@ describe("plugin manifest, help, and profile commands", () => {
         protocol: "agent-browser.plugin.v1",
         capability: "command.run",
         type: "profile.create",
-        request: { account: "seeded-1", seed: 100023 },
+        request: { account: "seeded-1", fingerprint: 100023 },
       },
     );
     expect(created.success).toBe(true);
     expect((created.data as { fingerprint: number }).fingerprint).toBe(100023);
     expect(readKitConfig(root).profiles?.["seeded-1"]?.fingerprint).toBe(100023);
 
-    const updated = await handlePluginRequest(
+    const createdMax = await handlePluginRequest(
       { storageRoot: root },
       {
         protocol: "agent-browser.plugin.v1",
         capability: "command.run",
         type: "profile.create",
-        request: { account: "seeded-1", seed: MAX_FINGERPRINT_SEED },
+        request: { account: "seeded-max", fingerprint: MAX_FINGERPRINT_SEED },
       },
     );
-    expect(updated.success).toBe(true);
-    expect((updated.data as { fingerprint: number }).fingerprint).toBe(MAX_FINGERPRINT_SEED);
+    expect(createdMax.success).toBe(true);
+    expect((createdMax.data as { fingerprint: number }).fingerprint).toBe(MAX_FINGERPRINT_SEED);
 
-    for (const invalidSeed of [0, -1, 2147483648, 1.5, "100023", null]) {
+    for (const invalidFingerprint of [0, -1, 2147483648, 1.5, "100023", null]) {
       const rejected = await handlePluginRequest(
         { storageRoot: root },
         {
           protocol: "agent-browser.plugin.v1",
           capability: "command.run",
           type: "profile.create",
-          request: { account: "seeded-1", seed: invalidSeed },
+          request: { account: "seeded-invalid", fingerprint: invalidFingerprint },
         },
       );
       expect(rejected.success).toBe(false);
