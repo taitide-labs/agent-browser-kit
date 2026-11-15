@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.9.0...v0.10.0) (2026-11-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **profile:** profile.create 对已存在账号直接报错，可选入参 seed 统一更名为 fingerprint。
+
+### Bug Fixes
+
+* **profile:** 防止重复创建覆盖指纹 ([#55](https://github.com/taitide-labs/agent-browser-kit/issues/55)) ([d897365](https://github.com/taitide-labs/agent-browser-kit/commit/d8973658b2c03780a0d5f60e15e1c22b2809d16f))
+
 ## [0.9.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.8.4...v0.9.0) (2026-11-14)
 
 
