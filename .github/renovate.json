@@ -10,7 +10,19 @@
   "schedule": ["before 4am on Monday"],
   "labels": ["dependencies"],
   "minimumReleaseAge": "7 days",
-  "internalChecksFilter": "strict",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.config/hk\\.pkl$/"],
+      "matchStrings": [
+        "package://github\\.com/jdx/hk/releases/download/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/",
+        "package://github\\.com/jdx/hk/releases/download/v\\d+\\.\\d+\\.\\d+/hk@(?<currentValue>\\d+\\.\\d+\\.\\d+)#/"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "jdx/hk",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    }
+  ],
   "packageRules": [
     {
       "matchUpdateTypes": ["patch", "pin", "digest"],
