@@ -91,7 +91,7 @@ agent-browser dashboard start
 
 配置说明：
 
-- 账号配置与全局默认配置统一保存在 `~/.local/share/agent-browser-kit/config.json`，如需为所有账号设置公共参数，可在其中添加 `defaults` 字段。
+- 账号可选覆盖参数与全局默认配置保存在 `~/.local/share/agent-browser-kit/config.json`，账号不可变指纹保存在 `profiles/<account>/account.fp`；如需为所有账号设置公共参数，可在 `config.json` 中添加 `defaults` 字段。
 - 任意 Chromium 开关参数传 `null`（例如 `"--disable-sync": null`）即可移除该默认参数。
 - 无头模式的屏幕工作区与 `devicePixelRatio` 调优请参阅 [headless-screen.md](docs/headless-screen.md)。
 
