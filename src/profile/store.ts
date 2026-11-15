@@ -89,15 +89,13 @@ export function createProfile(
   mkdirSync(dir, { recursive: true });
   try {
     writeFileSync(getFingerprintPath(storageRoot, account), `${fingerprint}\n`, "utf8");
-    if (Object.keys(overrides).length > 0) {
-      writeKitConfig(storageRoot, {
-        ...kitConfig,
-        profiles: {
-          ...kitConfig.profiles,
-          [account]: overrides,
-        },
-      });
-    }
+    writeKitConfig(storageRoot, {
+      ...kitConfig,
+      profiles: {
+        ...kitConfig.profiles,
+        [account]: overrides,
+      },
+    });
   } catch (error) {
     rmSync(dir, { recursive: true, force: true });
     throw error;
