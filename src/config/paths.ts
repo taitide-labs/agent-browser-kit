@@ -44,6 +44,10 @@ export function getRuntimeStatePath(storageRoot: string, account: string): strin
   return join(getProfileDir(storageRoot, account), "runtime.json");
 }
 
+export function getFingerprintPath(storageRoot: string, account: string): string {
+  return join(getProfileDir(storageRoot, account), "account.fp");
+}
+
 export function getEphemeralIndexPath(ephemeralRoot: string, account: string): string {
   return join(ephemeralRoot, `${assertValidAccount(account)}.runtime.json`);
 }

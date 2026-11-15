@@ -41,7 +41,7 @@ export interface ProfileConfig extends BrowserDefaultsConfig {
 export interface KitConfig {
   kernel?: ActiveKernel;
   defaults?: BrowserDefaultsConfig;
-  profiles?: Record<string, ProfileConfig>;
+  profiles?: Record<string, BrowserDefaultsConfig>;
 }
 
 export interface RuntimeState {

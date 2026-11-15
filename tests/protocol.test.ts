@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getConfigPath, getProfileDir } from "@/config/paths.ts";
+import { getConfigPath, getFingerprintPath, getProfileDir } from "@/config/paths.ts";
 import { readKitConfig } from "@/config/store.ts";
 import { generateFingerprint, MAX_FINGERPRINT_SEED } from "@/profile/store.ts";
 import { handlePluginRequest } from "@/protocol/router.ts";
@@ -83,7 +83,12 @@ describe("plugin manifest, help, and profile commands", () => {
     expect(data.fingerprint).toBeGreaterThanOrEqual(1);
     expect(data.fingerprint).toBeLessThanOrEqual(MAX_FINGERPRINT_SEED);
     expect(data["--disable-sync"]).toBeNull();
-    expect(readKitConfig(root).profiles?.["acct-1"]?.fingerprint).toBe(data.fingerprint);
+    expect(readFileSync(getFingerprintPath(root, "acct-1"), "utf8").trim()).toBe(
+      String(data.fingerprint),
+    );
+    expect(
+      (readKitConfig(root).profiles?.["acct-1"] as Record<string, unknown>)?.fingerprint,
+    ).toBeUndefined();
 
     const duplicate = await handlePluginRequest(
       { storageRoot: root },
@@ -96,7 +101,9 @@ describe("plugin manifest, help, and profile commands", () => {
     );
     expect(duplicate.success).toBe(false);
     expect(duplicate.error).toBe('Profile "acct-1" already exists.');
-    expect(readKitConfig(root).profiles?.["acct-1"]?.fingerprint).toBe(data.fingerprint);
+    expect(readFileSync(getFingerprintPath(root, "acct-1"), "utf8").trim()).toBe(
+      String(data.fingerprint),
+    );
     expect(readKitConfig(root).profiles?.["acct-1"]?.proxy).toBe("http://127.0.0.1:7890");
 
     mkdirSync(getProfileDir(root, "orphan-1"), { recursive: true });
@@ -222,7 +229,8 @@ describe("plugin manifest, help, and profile commands", () => {
     );
     expect(created.success).toBe(true);
     expect((created.data as { fingerprint: number }).fingerprint).toBe(100023);
-    expect(readKitConfig(root).profiles?.["seeded-1"]?.fingerprint).toBe(100023);
+    expect(readFileSync(getFingerprintPath(root, "seeded-1"), "utf8").trim()).toBe("100023");
+    expect(existsSync(getConfigPath(root))).toBe(false);
 
     const createdMax = await handlePluginRequest(
       { storageRoot: root },
@@ -235,6 +243,9 @@ describe("plugin manifest, help, and profile commands", () => {
     );
     expect(createdMax.success).toBe(true);
     expect((createdMax.data as { fingerprint: number }).fingerprint).toBe(MAX_FINGERPRINT_SEED);
+    expect(readFileSync(getFingerprintPath(root, "seeded-max"), "utf8").trim()).toBe(
+      String(MAX_FINGERPRINT_SEED),
+    );
 
     for (const invalidFingerprint of [0, -1, 2147483648, 1.5, "100023", null]) {
       const rejected = await handlePluginRequest(
@@ -250,11 +261,8 @@ describe("plugin manifest, help, and profile commands", () => {
       expect(rejected.error).toContain("Invalid fingerprint for profile");
     }
 
-    writeFileSync(
-      getConfigPath(root),
-      JSON.stringify({ profiles: { legacy: { fingerprint: 2147483648 } } }),
-      "utf8",
-    );
+    mkdirSync(getProfileDir(root, "corrupt"), { recursive: true });
+    writeFileSync(getFingerprintPath(root, "corrupt"), "2147483648\n", "utf8");
     const listed = await handlePluginRequest(
       { storageRoot: root },
       {

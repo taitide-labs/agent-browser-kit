@@ -3,7 +3,7 @@
 ## 1. 目标与边界
 
 - **调用极简**：业务侧通过 `agent-browser --session <account>` 指定会话名，经全局配置自动路由至 `kit` 插件完成环境拉起。
-- **持久与临时分离**：通过 `profile.create` 预建的账号配置集中保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 字段（含随机有符号 32 位正整数 `fingerprint`），浏览器持久数据目录位于 `~/.local/share/agent-browser-kit/profiles/<account>`；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
+- **持久与临时分离**：通过 `profile.create` 预建的账号目录位于 `~/.local/share/agent-browser-kit/profiles/<account>`，其随机有符号 32 位正整数 `fingerprint` 保存在该目录下的 `account.fp`（与浏览数据同生命周期）；可选覆盖参数按需保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 字段；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
 - **拟人化与接管**：通过 `--input-mode human` 启用人类指针轨迹，并在触发强校验时通过 `Dashboard` 接入人工验证。
 - **进程边界**：单账号对应单个浏览器进程；同账号并发任务通过同一进程内多标签页执行。
 
@@ -85,15 +85,15 @@ sequenceDiagram
    - `kernel.status`：查询当前激活内核版本与路径。
    - `profile.create` / `profile.list` / `profile.delete`：创建、查询与删除账号档案，重复创建已存在账号时直接报错。
 
-### 3.2 单一配置文件与指纹生成
+### 3.2 配置分离与指纹生成
 
-- **目录约定**：数据与配置均位于 `~/.local/share/agent-browser-kit/`，单一配置文件为 `config.json`（项目不主动生成全局默认项，由用户按需填写 `defaults`）：
-  - `config.json`：统一存放 `kernel`（含版本、可执行路径与安装时记录的 `platform`）、用户可选全局 `defaults` 以及账号 `profiles`。
+- **目录约定**：数据与配置均位于 `~/.local/share/agent-browser-kit/`（项目不主动生成全局默认项，由用户按需填写 `defaults`）：
+  - `config.json`：统一存放 `kernel`（含版本、可执行路径与安装时记录的 `platform`）、用户可选全局 `defaults` 以及账号可选覆盖参数 `profiles`。
   - `kernels/<version>/`：按版本存放已下载的内核文件。
-  - `profiles/<account>/`：仅存放该账号的 Chromium 运行态与浏览数据目录（无额外 `fp.json`）。
+  - `profiles/<account>/`：存放该账号的不可变指纹文件 `account.fp`、Chromium 运行态与浏览数据目录。
 - **账号元数据**：
-  - `fingerprint`：有符号 32 位正整数（`1` 至 `2147483647`，避免上游 `002-user-agent-fingerprint.patch` 使用 `base::StringToInt` 解析时发生 `INT_MAX` 溢出截断）；`profile.create` 未传 `fingerprint` 时由密码学安全随机数生成器（CSPRNG）生成，持久化后跨重启复用。
-  - 可选覆盖字段：`proxy`、`timezone`、`lang`、`acceptLang`、`windowSize` 及任意 `--*` Chromium 开关。
+  - `account.fp`：存放有符号 32 位正整数 `fingerprint`（`1` 至 `2147483647`，避免上游 `002-user-agent-fingerprint.patch` 使用 `base::StringToInt` 解析时发生 `INT_MAX` 溢出截断）；`profile.create` 未传 `fingerprint` 时由密码学安全随机数生成器（CSPRNG）生成，随账号目录持久化并禁止重复创建覆盖。
+  - 可选覆盖字段（写入 `config.json -> profiles.<account>`）：`proxy`、`timezone`、`lang`、`acceptLang`、`windowSize` 及任意 `--*` Chromium 开关。
 
 ### 3.3 内核拉起与五段参数合并
 
