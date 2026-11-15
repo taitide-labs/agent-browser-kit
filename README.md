@@ -85,7 +85,7 @@ agent-browser dashboard start
 | `kernel.install` | 下载并激活指纹内核（已安装时跳过） |
 | `kernel.upgrade` | 检查并升级至最新指纹内核 |
 | `kernel.status` | 查看当前激活的内核版本与路径 |
-| `profile.create` | 创建或更新账号档案 |
+| `profile.create` | 创建账号档案 |
 | `profile.list` | 列出已创建的账号档案 |
 | `profile.delete` | 删除指定账号档案及数据目录 |
 

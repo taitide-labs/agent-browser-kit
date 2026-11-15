@@ -11,7 +11,7 @@ export function generateFingerprint(): number {
   return randomInt(1, MAX_FINGERPRINT_SEED + 1);
 }
 
-function assertValidFingerprintSeed(value: unknown, sourceLabel: string): number {
+function assertValidFingerprint(value: unknown, sourceLabel: string): number {
   if (
     typeof value !== "number" ||
     !Number.isInteger(value) ||
@@ -31,7 +31,7 @@ function parseProfileRecord(rawValue: unknown, sourceLabel: string): ProfileConf
   }
   const raw = rawValue as Record<string, unknown>;
   return {
-    fingerprint: assertValidFingerprintSeed(raw.fingerprint, sourceLabel),
+    fingerprint: assertValidFingerprint(raw.fingerprint, sourceLabel),
     ...normalizeBrowserSettings(raw),
   };
 }
@@ -45,27 +45,25 @@ export function readProfileConfig(storageRoot: string, account: string): Profile
   return parseProfileRecord(rawProfile, normalizedAccount);
 }
 
-export function createOrUpdateProfile(
+export function createProfile(
   storageRoot: string,
   payload: Record<string, unknown>,
 ): ProfileConfig & { account: string } {
   const account = assertValidAccount(String(payload.account ?? ""));
   const kitConfig = readKitConfig(storageRoot);
-  const existing = kitConfig.profiles?.[account]
-    ? parseProfileRecord(kitConfig.profiles[account], account)
-    : null;
+  const hasEntry = Boolean(kitConfig.profiles && account in kitConfig.profiles);
+  const hasDir = existsSync(getProfileDir(storageRoot, account));
+  if (hasEntry || hasDir) {
+    throw new Error(`Profile "${account}" already exists.`);
+  }
+
   const fingerprint =
-    payload.seed !== undefined
-      ? assertValidFingerprintSeed(payload.seed, account)
-      : existing
-        ? existing.fingerprint
-        : generateFingerprint();
+    payload.fingerprint !== undefined
+      ? assertValidFingerprint(payload.fingerprint, account)
+      : generateFingerprint();
   const next: ProfileConfig = {
     fingerprint,
-    ...normalizeBrowserSettings(
-      payload,
-      existing ? (existing as unknown as Record<string, unknown>) : undefined,
-    ),
+    ...normalizeBrowserSettings(payload),
   };
 
   writeKitConfig(storageRoot, {

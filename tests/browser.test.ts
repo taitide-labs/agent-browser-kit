@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { isProcessAlive } from "@/browser/lifecycle.ts";
 import { getProfileDir } from "@/config/paths.ts";
 import { writeKitConfig } from "@/kernel/manager.ts";
-import { createOrUpdateProfile } from "@/profile/store.ts";
+import { createProfile } from "@/profile/store.ts";
 import { handlePluginRequest } from "@/protocol/router.ts";
 
 const tempDirs: string[] = [];
@@ -67,7 +67,7 @@ sleep 30
         defaults: { "--mute-audio": true },
       });
 
-      createOrUpdateProfile(root, { account: "verify-01", "--hide-scrollbars": null });
+      createProfile(root, { account: "verify-01", "--hide-scrollbars": null });
       const profileDir = getProfileDir(root, "verify-01");
       mkdirSync(profileDir, { recursive: true });
       symlinkSync("localhost-9999999", join(profileDir, "SingletonLock"));
