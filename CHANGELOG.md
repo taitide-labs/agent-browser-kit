@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/taitide-labs/agent-browser-kit/compare/v0.11.0...v0.11.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **profile:** 在 config.json 保留新建账号条目 ([#59](https://github.com/taitide-labs/agent-browser-kit/issues/59)) ([4219faf](https://github.com/taitide-labs/agent-browser-kit/commit/4219faf733cb0ec89d01b3c489124fcf844a01ec))
+
 ## [0.11.0](https://github.com/taitide-labs/agent-browser-kit/compare/v0.10.0...v0.11.0) (2026-11-15)
 
 
