@@ -230,7 +230,7 @@ describe("plugin manifest, help, and profile commands", () => {
     expect(created.success).toBe(true);
     expect((created.data as { fingerprint: number }).fingerprint).toBe(100023);
     expect(readFileSync(getFingerprintPath(root, "seeded-1"), "utf8").trim()).toBe("100023");
-    expect(existsSync(getConfigPath(root))).toBe(false);
+    expect(readKitConfig(root).profiles?.["seeded-1"]).toEqual({});
 
     const createdMax = await handlePluginRequest(
       { storageRoot: root },

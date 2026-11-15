@@ -3,7 +3,7 @@
 ## 1. 目标与边界
 
 - **调用极简**：业务侧通过 `agent-browser --session <account>` 指定会话名，经全局配置自动路由至 `kit` 插件完成环境拉起。
-- **持久与临时分离**：通过 `profile.create` 预建的账号目录位于 `~/.local/share/agent-browser-kit/profiles/<account>`，其随机有符号 32 位正整数 `fingerprint` 保存在该目录下的 `account.fp`（与浏览数据同生命周期）；可选覆盖参数按需保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 字段；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
+- **持久与临时分离**：通过 `profile.create` 预建的账号目录位于 `~/.local/share/agent-browser-kit/profiles/<account>`，其随机有符号 32 位正整数 `fingerprint` 保存在该目录下的 `account.fp`（与浏览数据同生命周期）；账号条目及可选覆盖参数保存在 `~/.local/share/agent-browser-kit/config.json` 的 `profiles` 字段；未建档的 `--session` 使用 `mkdtempSync` 创建系统临时目录并在 `close` 后彻底销毁。
 - **拟人化与接管**：通过 `--input-mode human` 启用人类指针轨迹，并在触发强校验时通过 `Dashboard` 接入人工验证。
 - **进程边界**：单账号对应单个浏览器进程；同账号并发任务通过同一进程内多标签页执行。
 
